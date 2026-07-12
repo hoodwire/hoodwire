@@ -68,7 +68,8 @@ Turning the demo dashboard into a working app, verified through CI on each step:
 - [x] **Phase 1** — `npm run chain:dev` boots anvil, deploys, and writes
   `addresses.local.json` + `.env` (see [README](../README.md#run-a-local-chain)).
 - [ ] **Phase 2** — wallet connect + real escrow reads/writes on `/dashboard`.
-- [ ] **Phase 3** — HTTP+SSE activity feed from the gateway into `/dashboard` and `/metrics`.
+- [x] **Phase 3** — HTTP+SSE activity feed from the gateway (`GET /events`,
+  `GET /metrics/rolling`) into `/dashboard` and `/metrics`.
 - [ ] **Phase 4** — gateway billing settled through `SettlementEscrow.charge()`.
 
 ## Roadmap

@@ -64,6 +64,16 @@ Then call tools like `execute_swap`, `get_stock_price` — the gateway runs the 
 auction and returns the winning route. Vendors are currently **simulated adapters**;
 each has a `// TODO(onchain)` marker where real `viem` calls go.
 
+Alongside the stdio MCP server, the gateway serves an HTTP sidecar on `GATEWAY_PORT`
+(default `8787`) that shares the same in-process router and billing:
+
+- `GET /events` — Server-Sent Events, one message per settled call.
+- `GET /metrics/rolling` — rolling aggregate of recent calls.
+
+The dashboard and `/metrics` page subscribe to these when the gateway is running
+(`NEXT_PUBLIC_GATEWAY_URL`, default `http://127.0.0.1:8787`) and fall back to demo data
+otherwise.
+
 ### Run a local chain
 
 One command boots a local [anvil](https://book.getfoundry.sh/anvil/) chain, deploys the

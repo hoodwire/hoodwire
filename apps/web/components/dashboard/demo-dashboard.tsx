@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, C, mono } from "@/components/site-chrome";
 import { DEFAULT_BUDGET, type BudgetConfig } from "@hoodwire/sdk";
 import { SliderRow } from "./slider-row";
-import { SimulatedActivityCard } from "./activity-card";
+import { ActivityCard } from "./activity-card";
 
 /** Fallback shown when no wallet is connected to the local chain. All values simulated. */
 export function DemoDashboard() {
@@ -74,7 +74,7 @@ export function DemoDashboard() {
         />
       </Card>
 
-      <SimulatedActivityCard onSpend={(fee) => {
+      <ActivityCard onSpend={(fee) => {
         setBalance((b) => Number((b - fee).toFixed(3)));
         setSpentToday((s) => Number((s + fee).toFixed(3)));
       }} />

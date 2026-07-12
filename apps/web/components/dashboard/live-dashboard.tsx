@@ -7,7 +7,7 @@ import { Card, C, mono } from "@/components/site-chrome";
 import { type LocalChain, USDG_DECIMALS } from "@/lib/chain";
 import { escrowAbi, usdgAbi } from "@/lib/abis";
 import { SliderRow } from "./slider-row";
-import { SimulatedActivityCard } from "./activity-card";
+import { ActivityCard } from "./activity-card";
 
 function fmt(v: bigint): string {
   return Number(formatUnits(v, USDG_DECIMALS)).toFixed(2);
@@ -49,7 +49,7 @@ export function LiveDashboard({ local, address }: { local: LocalChain; address: 
     <div className="grid lg:grid-cols-3 gap-6">
       <WalletCard local={local} escrowBal={escrowBal} walletBal={walletBal} spentToday={spentToday} dailyLimit={dailyLimit} reload={reload} />
       <LimitCard local={local} dailyLimit={dailyLimit} reload={reload} />
-      <SimulatedActivityCard />
+      <ActivityCard />
     </div>
   );
 }

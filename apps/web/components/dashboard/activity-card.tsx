@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Card, C, mono } from "@/components/site-chrome";
+import { useEventStream } from "./use-event-stream";
 
-/* Simulated agent activity. Phase 3 replaces this with the gateway SSE feed. */
+/* Simulated fallback when the gateway SSE feed isn't connected. */
 const FEED = [
   { cap: "get_stock_price", vendor: "chainlink-feeds", fee: 0.002, ms: 96 },
   { cap: "execute_swap", vendor: "uniswap-v3", fee: 0.14, ms: 612 },
@@ -15,45 +16,54 @@ const FEED = [
   { cap: "bridge_quote", vendor: "hoodwire-core", fee: 0.01, ms: 342 },
 ];
 
-interface Entry { id: number; time: string; cap: string; vendor: string; fee: number; ms: number; }
+interface Row { id: number | string; cap: string; vendor: string; fee: number; ms: number; }
 
-export function SimulatedActivityCard({ onSpend }: { onSpend?: (fee: number) => void }) {
+export function ActivityCard({ onSpend }: { onSpend?: (fee: number) => void }) {
+  const { events, connected } = useEventStream(8);
+  const live = connected && events.length > 0;
+
   const [running, setRunning] = useState(true);
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const [sim, setSim] = useState<Row[]>([]);
   const seq = useRef(0);
 
+  // Run the simulator only while the live feed is unavailable.
   useEffect(() => {
-    if (!running) return;
+    if (live || !running) return;
     const id = setInterval(() => {
       const f = FEED[seq.current % FEED.length];
       seq.current += 1;
       onSpend?.(f.fee);
-      setEntries((prev) => [{ id: seq.current, time: new Date().toLocaleTimeString("en-GB"), ...f }, ...prev].slice(0, 8));
+      setSim((prev) => [{ id: `s${seq.current}`, ...f }, ...prev].slice(0, 8));
     }, 2600);
     return () => clearInterval(id);
-    // onSpend is intentionally excluded; the simulator owns its own cadence.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
+  }, [live, running]);
+
+  const rows: Row[] = live
+    ? events.map((e) => ({ id: e.id, cap: e.capability, vendor: e.vendor, fee: e.feeUsdg, ms: e.routingMs + e.executionMs }))
+    : sim;
 
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
         <div className="text-xs uppercase tracking-widest" style={{ color: C.lime }}>
-          <span className="inline-block w-1.5 h-1.5 rounded-full mr-2 align-middle" style={{ background: running ? C.lime : C.mute }} />
+          <span className="inline-block w-1.5 h-1.5 rounded-full mr-2 align-middle" style={{ background: live || running ? C.lime : C.mute }} />
           Agent activity
-          <span className="ml-2 lowercase tracking-normal" style={{ color: C.mute }}>· simulated</span>
+          <span className="ml-2 lowercase tracking-normal" style={{ color: live ? C.lime : C.mute }}>· {live ? "live" : "simulated"}</span>
         </div>
-        <button
-          onClick={() => setRunning((r) => !r)}
-          className="text-xs px-3 py-1 rounded-full"
-          style={{ border: `1px solid ${C.line}`, color: C.mute }}
-        >
-          {running ? "pause" : "resume"}
-        </button>
+        {!live && (
+          <button
+            onClick={() => setRunning((r) => !r)}
+            className="text-xs px-3 py-1 rounded-full"
+            style={{ border: `1px solid ${C.line}`, color: C.mute }}
+          >
+            {running ? "pause" : "resume"}
+          </button>
+        )}
       </div>
       <div className="space-y-2 text-xs" style={mono}>
-        {entries.length === 0 && <div style={{ color: C.mute }}>waiting for calls…</div>}
-        {entries.map((e) => (
+        {rows.length === 0 && <div style={{ color: C.mute }}>waiting for calls…</div>}
+        {rows.map((e) => (
           <div key={e.id} className="flex justify-between gap-2 py-1.5" style={{ borderBottom: `1px solid ${C.line}` }}>
             <span style={{ color: C.ink }}>{e.cap}</span>
             <span style={{ color: C.mute }}>{e.vendor}</span>

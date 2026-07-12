@@ -13,6 +13,8 @@ import { route } from "./router.js";
 import { ADAPTERS } from "./adapters/index.js";
 import { precheck, charge, getAccount, setBudget } from "./billing.js";
 import { recordCall, snapshot } from "./reputation.js";
+import { calls } from "./events.js";
+import { startHttpServer } from "./server.js";
 
 // single-user dev mode; hosted mode derives this from the bearer token
 const USER = "dev-user";
@@ -33,6 +35,16 @@ async function handle(capability: Capability, params: Record<string, unknown>) {
   const result = await adapter.execute(capability, params);
   charge(USER, routed.winner.priceUsdg);
   recordCall(adapter.id, result.ok, result.actualLatencyMs);
+
+  calls.publish({
+    capability,
+    vendor: adapter.id,
+    feeUsdg: routed.winner.priceUsdg,
+    routingMs: routed.routedInMs,
+    executionMs: result.actualLatencyMs,
+    ok: result.ok,
+    losingBids: routed.losers.map((l) => `${l.vendorId} @ ${l.priceUsdg} USDG`),
+  });
 
   const acct = getAccount(USER);
   const summary = {
@@ -127,3 +139,6 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 console.error("hoodwire gateway ready (stdio) — capabilities: " +
   ADAPTERS.flatMap((a) => a.capabilities).filter((v, i, s) => s.indexOf(v) === i).join(", "));
+
+// HTTP/SSE sidecar for the dashboard and metrics pages (same in-process router/billing)
+startHttpServer(Number(process.env.GATEWAY_PORT ?? 8787));
