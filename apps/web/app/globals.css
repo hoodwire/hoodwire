@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --font-grotesk: "Space Grotesk", Inter, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+body {
+  background: #0b0e0c;
+  color: #edefea;
+  font-family: var(--font-grotesk);
+}
+::selection { background: rgba(198, 245, 62, 0.28); color: #edefea; }
