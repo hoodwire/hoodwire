@@ -64,16 +64,25 @@ Then call tools like `execute_swap`, `get_stock_price` — the gateway runs the 
 auction and returns the winning route. Vendors are currently **simulated adapters**;
 each has a `// TODO(onchain)` marker where real `viem` calls go.
 
-### Deploy contracts locally
+### Run a local chain
+
+One command boots a local [anvil](https://book.getfoundry.sh/anvil/) chain, deploys the
+contracts against it, and writes the deployed addresses where the app and gateway read
+them:
 
 ```bash
-anvil                                  # terminal 1
-cd contracts                           # terminal 2
-forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+npm run chain:dev        # requires Foundry (anvil, forge) on PATH
 ```
 
-Copy the printed addresses into `.env` (see `.env.example`).
+It generates two git-ignored files and then keeps anvil running (Ctrl-C to stop):
+
+- `apps/web/lib/addresses.local.json` — consumed by the dashboard (chain id 31337, RPC,
+  and the USDG / Reputation / VendorRegistry / SettlementEscrow addresses).
+- `.env` — the same addresses plus `OPERATOR_PRIVATE_KEY` and `RPC_URL` for the gateway.
+
+The chain uses anvil's deterministic account `#0` as the operator and dev wallet, and the
+deploy seeds it with 10,000 USDG. With the chain up, run `npm run dev:web` in another
+terminal; the dashboard connects to it automatically.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the packages fit together.
 

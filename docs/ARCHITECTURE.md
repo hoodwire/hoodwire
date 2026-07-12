@@ -60,6 +60,17 @@ background, live routing visualization, interactive budget controls). Additional
 - Simulated figures are internally consistent (p50 782 ms, 23% average saving) and must
   stay that way across the site and the gateway.
 
+## Build phases
+
+Turning the demo dashboard into a working app, verified through CI on each step:
+
+- [x] **Phase 0** — landing CTAs point to real routes (`/dashboard`, `/docs`, `/registry`).
+- [x] **Phase 1** — `npm run chain:dev` boots anvil, deploys, and writes
+  `addresses.local.json` + `.env` (see [README](../README.md#run-a-local-chain)).
+- [ ] **Phase 2** — wallet connect + real escrow reads/writes on `/dashboard`.
+- [ ] **Phase 3** — HTTP+SSE activity feed from the gateway into `/dashboard` and `/metrics`.
+- [ ] **Phase 4** — gateway billing settled through `SettlementEscrow.charge()`.
+
 ## Roadmap
 
 1. Replace the simulated adapters with `viem` calls (Uniswap v3 quoter, Chainlink feeds,

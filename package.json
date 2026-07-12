@@ -5,6 +5,7 @@
   "description": "Hoodwire — the financial routing & payment layer for AI agents on Robinhood Chain",
   "workspaces": ["apps/*", "services/*", "packages/*"],
   "scripts": {
+    "chain:dev": "node scripts/chain-dev.mjs",
     "dev:web": "npm run dev --workspace apps/web",
     "dev:gateway": "npm run dev --workspace services/gateway",
     "build": "npm run build --workspaces --if-present",
