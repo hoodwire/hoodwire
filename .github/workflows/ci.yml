@@ -27,7 +27,10 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
       - name: Install forge-std
         working-directory: contracts
-        run: forge install foundry-rs/forge-std --no-commit
+        run: |
+          git config --global user.email "ci@hoodwire.local"
+          git config --global user.name "hoodwire ci"
+          forge install foundry-rs/forge-std
       - name: Run tests
         working-directory: contracts
         run: forge test -vvv
