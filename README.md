@@ -77,6 +77,20 @@ Copy the printed addresses into `.env` (see `.env.example`).
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the packages fit together.
 
+## Deploy the web app
+
+The site (`apps/web`) is a standard Next.js app and deploys to Vercel with no code
+changes:
+
+1. Import the repository at [vercel.com/new](https://vercel.com/new).
+2. Set **Root Directory** to `apps/web`. Vercel detects the npm workspaces at the repo
+   root and installs `@hoodwire/sdk` automatically.
+3. Framework preset auto-detects as **Next.js** — leave the build and install commands at
+   their defaults. Deploy.
+
+The gateway and contracts are backend/onchain services and are not part of the web
+deployment.
+
 ## Status / roadmap
 
 - [x] Landing site with live routing visualization
