@@ -862,7 +862,7 @@ export default function HoodwireLanding() {
               ))}
             </nav>
             <div className="hidden md:block">
-              <a href="#integrate" className="hw-cta inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: C.lime, color: C.bg }}>
+              <a href="/dashboard" className="hw-cta inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: C.lime, color: C.bg }}>
                 Launch App
               </a>
             </div>
@@ -875,7 +875,7 @@ export default function HoodwireLanding() {
               {nav.map((n) => (
                 <a key={n} href={n === "Protocol" ? "/#protocol" : `/${n.toLowerCase()}`} className="hw-link block pt-3" onClick={() => setMenuOpen(false)}>{n}</a>
               ))}
-              <a href="#integrate" onClick={() => setMenuOpen(false)} className="inline-block mt-2 px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: C.lime, color: C.bg }}>
+              <a href="/dashboard" onClick={() => setMenuOpen(false)} className="inline-block mt-2 px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: C.lime, color: C.bg }}>
                 Launch App
               </a>
             </div>
@@ -907,11 +907,11 @@ export default function HoodwireLanding() {
                 one MCP connection. Routed, paid, and settled in under a second.
               </p>
               <div className="mt-9 flex flex-wrap gap-4">
-                <a href="#integrate" className="hw-cta px-6 py-3 rounded-lg font-semibold text-sm" style={{ background: C.lime, color: C.bg }}>
+                <a href="/docs" className="hw-cta px-6 py-3 rounded-lg font-semibold text-sm" style={{ background: C.lime, color: C.bg }}>
                   Connect your agent
                 </a>
                 <a
-                  href="#registry"
+                  href="/registry"
                   className="px-6 py-3 rounded-lg font-semibold text-sm transition-colors duration-200"
                   style={{ border: `1px solid ${C.line}`, color: C.ink, background: "rgba(11,14,12,0.4)", backdropFilter: "blur(6px)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.limeBorder)}
