@@ -1,0 +1,13 @@
+node_modules/
+.next/
+dist/
+out/
+.env
+.env.local
+*.tsbuildinfo
+
+# foundry
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+contracts/lib/
