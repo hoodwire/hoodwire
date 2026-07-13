@@ -70,4 +70,28 @@ export const escrowAbi = [
     inputs: [{ name: "limit", type: "uint128" }],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "operator",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "charge",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "user", type: "address" },
+      { name: "vendorId", type: "bytes32" },
+      { name: "vendorPayout", type: "address" },
+      { name: "fee", type: "uint256" },
+      { name: "success", type: "bool" },
+      { name: "latencyMs", type: "uint32" },
+    ],
+    outputs: [],
+  },
+  { type: "error", name: "InsufficientBalance", inputs: [] },
+  { type: "error", name: "DailyLimitExceeded", inputs: [] },
+  { type: "error", name: "NotOperator", inputs: [] },
 ] as const;
