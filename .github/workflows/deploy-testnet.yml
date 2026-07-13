@@ -71,6 +71,6 @@ jobs:
         run: |
           git config user.email "ci@hoodwire.local"
           git config user.name "hoodwire ci"
-          git add deployments/robinhood-testnet.json
+          git add apps/web/lib/deployments/robinhood-testnet.json
           git commit -m "chore(deploy): record Robinhood testnet contract addresses" || echo "no changes"
           git push

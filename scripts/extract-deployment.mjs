@@ -48,11 +48,11 @@ const out = {
   settlementEscrow: byName.SettlementEscrow,
 };
 
-const outPath = resolve(ROOT, "deployments", `${network}.json`);
+const outPath = resolve(ROOT, "apps/web/lib/deployments", `${network}.json`);
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, JSON.stringify(out, null, 2) + "\n");
 
-console.log(`wrote deployments/${network}.json`);
+console.log(`wrote apps/web/lib/deployments/${network}.json`);
 for (const [name, addr] of Object.entries(byName)) {
   console.log(`  ${name} = ${explorer}/address/${addr}`);
 }

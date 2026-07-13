@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useReadContracts, useWriteContract, usePublicClient } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { Card, C, mono } from "@/components/site-chrome";
-import { type LocalChain, USDG_DECIMALS } from "@/lib/chain";
+import { type Deployment, USDG_DECIMALS } from "@/lib/chain";
 import { escrowAbi, usdgAbi } from "@/lib/abis";
 import { SliderRow } from "./slider-row";
 import { ActivityCard } from "./activity-card";
@@ -27,12 +27,12 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message.split("\n")[0] : String(e);
 }
 
-export function LiveDashboard({ local, address }: { local: LocalChain; address: `0x${string}` }) {
+export function LiveDashboard({ deployment, address }: { deployment: Deployment; address: `0x${string}` }) {
   const { data, refetch } = useReadContracts({
     contracts: [
-      { address: local.settlementEscrow, abi: escrowAbi, functionName: "balances", args: [address] },
-      { address: local.usdg, abi: usdgAbi, functionName: "balanceOf", args: [address] },
-      { address: local.settlementEscrow, abi: escrowAbi, functionName: "configs", args: [address] },
+      { address: deployment.settlementEscrow, abi: escrowAbi, functionName: "balances", args: [address] },
+      { address: deployment.usdg, abi: usdgAbi, functionName: "balanceOf", args: [address] },
+      { address: deployment.settlementEscrow, abi: escrowAbi, functionName: "configs", args: [address] },
     ],
     query: { refetchInterval: 5000 },
   });
@@ -47,17 +47,17 @@ export function LiveDashboard({ local, address }: { local: LocalChain; address: 
 
   return (
     <div className="grid lg:grid-cols-3 gap-6">
-      <WalletCard local={local} escrowBal={escrowBal} walletBal={walletBal} spentToday={spentToday} dailyLimit={dailyLimit} reload={reload} />
-      <LimitCard local={local} dailyLimit={dailyLimit} reload={reload} />
+      <WalletCard deployment={deployment} escrowBal={escrowBal} walletBal={walletBal} spentToday={spentToday} dailyLimit={dailyLimit} reload={reload} />
+      <LimitCard deployment={deployment} dailyLimit={dailyLimit} reload={reload} />
       <ActivityCard />
     </div>
   );
 }
 
 function WalletCard({
-  local, escrowBal, walletBal, spentToday, dailyLimit, reload,
+  deployment, escrowBal, walletBal, spentToday, dailyLimit, reload,
 }: {
-  local: LocalChain; escrowBal: bigint; walletBal: bigint; spentToday: bigint; dailyLimit: bigint; reload: () => void;
+  deployment: Deployment; escrowBal: bigint; walletBal: bigint; spentToday: bigint; dailyLimit: bigint; reload: () => void;
 }) {
   const [amount, setAmount] = useState("25");
   const [status, setStatus] = useState<string | null>(null);
@@ -75,13 +75,13 @@ function WalletCard({
     try {
       setStatus("Approving USDG — confirm in wallet…");
       const approveHash = await writeContractAsync({
-        address: local.usdg, abi: usdgAbi, functionName: "approve", args: [local.settlementEscrow, value],
+        address: deployment.usdg, abi: usdgAbi, functionName: "approve", args: [deployment.settlementEscrow, value],
       });
       setStatus("Waiting for approval…");
       await publicClient.waitForTransactionReceipt({ hash: approveHash });
       setStatus("Depositing — confirm in wallet…");
       const depositHash = await writeContractAsync({
-        address: local.settlementEscrow, abi: escrowAbi, functionName: "deposit", args: [value],
+        address: deployment.settlementEscrow, abi: escrowAbi, functionName: "deposit", args: [value],
       });
       setStatus("Confirming deposit…");
       await publicClient.waitForTransactionReceipt({ hash: depositHash });
@@ -102,7 +102,7 @@ function WalletCard({
     try {
       setStatus("Withdrawing — confirm in wallet…");
       const hash = await writeContractAsync({
-        address: local.settlementEscrow, abi: escrowAbi, functionName: "withdraw", args: [value],
+        address: deployment.settlementEscrow, abi: escrowAbi, functionName: "withdraw", args: [value],
       });
       setStatus("Confirming withdrawal…");
       await publicClient.waitForTransactionReceipt({ hash });
@@ -120,7 +120,14 @@ function WalletCard({
     <Card>
       <div className="text-xs uppercase tracking-widest mb-1" style={{ color: C.mute }}>Escrow balance</div>
       <div className="text-4xl font-bold tabular-nums" style={{ color: C.lime }}>{fmt(escrowBal)} <span className="text-lg">USDG</span></div>
-      <div className="text-xs mt-1" style={{ color: C.mute }}>wallet holds {fmt(walletBal)} USDG · anvil local</div>
+      <div className="text-xs mt-1 flex flex-wrap items-center gap-x-2" style={{ color: C.mute }}>
+        <span>wallet holds {fmt(walletBal)} USDG</span>
+        {deployment.explorer && (
+          <a href={`${deployment.explorer}/address/${deployment.settlementEscrow}`} target="_blank" rel="noreferrer" style={{ color: C.lime }}>
+            · view escrow ↗
+          </a>
+        )}
+      </div>
 
       <div className="mt-6 flex gap-2">
         <input
@@ -153,7 +160,7 @@ function WalletCard({
   );
 }
 
-function LimitCard({ local, dailyLimit, reload }: { local: LocalChain; dailyLimit: bigint; reload: () => void }) {
+function LimitCard({ deployment, dailyLimit, reload }: { deployment: Deployment; dailyLimit: bigint; reload: () => void }) {
   const onchain = Number(formatUnits(dailyLimit, USDG_DECIMALS));
   const [uiLimit, setUiLimit] = useState(onchain);
   const [approval, setApproval] = useState(0.5);
@@ -174,7 +181,7 @@ function LimitCard({ local, dailyLimit, reload }: { local: LocalChain; dailyLimi
     setBusy("Updating limit — confirm in wallet…");
     try {
       const hash = await writeContractAsync({
-        address: local.settlementEscrow, abi: escrowAbi, functionName: "setDailyLimit",
+        address: deployment.settlementEscrow, abi: escrowAbi, functionName: "setDailyLimit",
         args: [parseUnits(String(v) as `${number}`, USDG_DECIMALS)],
       });
       setBusy("Confirming…");

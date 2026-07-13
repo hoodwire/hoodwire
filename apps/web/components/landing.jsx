@@ -888,7 +888,7 @@ export default function HoodwireLanding() {
             <Reveal>
               <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full mb-7" style={{ border: `1px solid ${C.limeBorder}`, color: C.mute, background: "rgba(11,14,12,0.5)", backdropFilter: "blur(6px)" }}>
                 <span className="w-1.5 h-1.5 rounded-full hw-pulse" style={{ background: C.lime }} />
-                Live on Robinhood Chain mainnet
+                Live on Robinhood Chain testnet
               </div>
               <h1
                 className="font-bold tracking-tight"

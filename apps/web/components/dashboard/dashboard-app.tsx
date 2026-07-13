@@ -2,20 +2,20 @@
 
 import { useState } from "react";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
-import { PageShell, C, mono } from "@/components/site-chrome";
-import { makeConfig, type LocalChain } from "@/lib/chain";
+import { PageShell, C } from "@/components/site-chrome";
+import { makeConfig, deploymentFor, chainName, ROBINHOOD, type Deployment } from "@/lib/chain";
 import { Providers } from "./providers";
 import { DemoDashboard } from "./demo-dashboard";
 import { LiveDashboard } from "./live-dashboard";
 
 const short = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
 
-export function DashboardApp({ local }: { local: LocalChain | null }) {
+export function DashboardApp({ local }: { local: Deployment | null }) {
   const [config] = useState(() => makeConfig(local));
   return (
     <Providers config={config}>
       <PageShell
-        eyebrow={local ? "App · local chain" : "App · demo mode"}
+        eyebrow="App · Robinhood Chain Testnet"
         title={<>Your agent&apos;s <span style={{ color: C.lime }}>deposit wallet.</span></>}
       >
         <DashboardBody local={local} />
@@ -24,14 +24,14 @@ export function DashboardApp({ local }: { local: LocalChain | null }) {
   );
 }
 
-function DashboardBody({ local }: { local: LocalChain | null }) {
+function DashboardBody({ local }: { local: Deployment | null }) {
   const { address, isConnected, chainId } = useAccount();
-  const connectedToLocal = isConnected && !!local && chainId === local.chainId;
+  const deployment = deploymentFor(chainId, local);
   return (
     <>
       <ConnectBar local={local} />
-      {connectedToLocal ? (
-        <LiveDashboard local={local} address={address as `0x${string}`} />
+      {isConnected && deployment && address ? (
+        <LiveDashboard deployment={deployment} address={address} />
       ) : (
         <DemoDashboard />
       )}
@@ -39,13 +39,14 @@ function DashboardBody({ local }: { local: LocalChain | null }) {
   );
 }
 
-function ConnectBar({ local }: { local: LocalChain | null }) {
+function ConnectBar({ local }: { local: Deployment | null }) {
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const injected = connectors[0];
-  const wrongNetwork = isConnected && !!local && chainId !== local.chainId;
+  const deployment = deploymentFor(chainId, local);
+  const unsupported = isConnected && !deployment;
 
   const btn = "px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-200";
 
@@ -54,21 +55,24 @@ function ConnectBar({ local }: { local: LocalChain | null }) {
       className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl px-5 py-3"
       style={{ border: `1px solid ${C.line}`, background: C.panel }}
     >
-      <div className="text-sm" style={{ color: C.mute }}>
-        {!local ? (
-          <>No local deployment found — run <code style={mono}>npm run chain:dev</code>, then reload.</>
-        ) : !isConnected ? (
-          "Connect an injected wallet on the local anvil chain for live balances."
-        ) : wrongNetwork ? (
-          <>Wrong network — switch to <span style={{ color: C.ink }}>chain {local.chainId}</span>.</>
+      <div className="text-sm flex items-center gap-2" style={{ color: C.mute }}>
+        <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: deployment ? C.lime : C.mute }} />
+        {!isConnected ? (
+          "Connect an injected wallet to use live balances."
+        ) : unsupported ? (
+          <>Connected to <span style={{ color: C.ink }}>{chainName(chainId, local)}</span> — switch to a supported network.</>
         ) : (
-          <>Connected <span style={{ color: C.ink }}>{short(address)}</span> · anvil {local?.chainId}</>
+          <>Connected <span style={{ color: C.ink }}>{short(address)}</span> · {chainName(chainId, local)}</>
         )}
       </div>
       <div className="flex gap-2">
-        {wrongNetwork && local && (
-          <button onClick={() => switchChain({ chainId: local.chainId })} className={btn} style={{ border: `1px solid ${C.limeBorder}`, color: C.lime }}>
-            Switch network
+        {unsupported && (
+          <button
+            onClick={() => switchChain({ chainId: ROBINHOOD.chainId })}
+            className={btn}
+            style={{ border: `1px solid ${C.limeBorder}`, color: C.lime }}
+          >
+            Switch to Robinhood Chain Testnet
           </button>
         )}
         {!isConnected ? (
