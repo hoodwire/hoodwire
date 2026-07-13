@@ -7,7 +7,9 @@ import { useState, type ReactNode } from "react";
 export function Providers({ config, children }: { config: Config; children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
   return (
-    <WagmiProvider config={config}>
+    // reconnectOnMount={false}: never touch a wallet until the user clicks Connect,
+    // so visitors don't get an "open wallet app" prompt just for viewing the page.
+    <WagmiProvider config={config} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
   );
