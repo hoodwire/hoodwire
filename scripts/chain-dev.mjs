@@ -128,7 +128,7 @@ function writeEnv(a) {
 
 async function main() {
   log("starting anvil on " + RPC_URL + " (chain " + CHAIN_ID + ")");
-  const anvil = spawn("anvil", ["--chain-id", String(CHAIN_ID), "--silent"], {
+  const anvil = spawn("anvil", ["--host", "127.0.0.1", "--chain-id", String(CHAIN_ID), "--silent"], {
     stdio: "inherit",
     shell: isWin,
   });

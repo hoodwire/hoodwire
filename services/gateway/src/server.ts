@@ -30,8 +30,9 @@ export function startHttpServer(port: number): void {
   });
 
   server.on("error", (err) => console.error("[http] " + err.message));
-  server.listen(port, () =>
-    console.error(`hoodwire http/sse ready on :${port} (/events, /metrics/rolling)`),
+  // bind to loopback only — never expose the gateway beyond localhost
+  server.listen(port, "127.0.0.1", () =>
+    console.error(`hoodwire http/sse ready on 127.0.0.1:${port} (/events, /metrics/rolling)`),
   );
 }
 
