@@ -153,6 +153,28 @@ function WalletCard({
     }
   }
 
+  // Anyone can mint the test stablecoin (MockUSDG is a permissionless faucet), so a
+  // fresh visitor can fund their wallet and actually try deposit / withdraw.
+  async function mintUsdg() {
+    if (!publicClient || busy) return;
+    setBusy(true);
+    try {
+      setStatus("Minting 1,000 test USDG — confirm in wallet…");
+      const hash = await writeContractAsync({
+        address: deployment.usdg, abi: usdgAbi, functionName: "mint", args: [address, parseUnits("1000", USDG_DECIMALS)],
+      });
+      setStatus("Confirming…");
+      await publicClient.waitForTransactionReceipt({ hash });
+      setStatus("Got 1,000 test USDG ✓");
+      reload();
+    } catch (e) {
+      setStatus("Failed: " + errMsg(e));
+    } finally {
+      setBusy(false);
+      setTimeout(() => setStatus(null), 3200);
+    }
+  }
+
   return (
     <Card>
       <div className="text-xs uppercase tracking-widest mb-1" style={{ color: C.mute }}>Escrow balance</div>
@@ -181,6 +203,15 @@ function WalletCard({
       <p className="text-xs mt-3 min-h-4" style={{ color: status ? C.lime : C.mute }}>
         {status ?? "Top up approves USDG then deposits to escrow. Withdraw anytime — no lock-up."}
       </p>
+
+      <button
+        onClick={mintUsdg}
+        disabled={busy}
+        className="mt-3 w-full px-3 py-2 rounded-lg text-sm font-medium"
+        style={{ border: `1px solid ${C.line}`, color: C.mute, opacity: busy ? 0.6 : 1 }}
+      >
+        + Get 1,000 test USDG (free)
+      </button>
 
       {isOperator && (
         <button
