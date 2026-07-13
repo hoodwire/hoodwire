@@ -77,9 +77,9 @@ export function PageShell({ title, eyebrow, children }: { title: React.ReactNode
   return (
     <div className="min-h-screen" style={{ background: C.bg, color: C.ink }}>
       <SiteNav />
-      <main className="mx-auto px-6 pt-16 pb-28" style={{ maxWidth: 1150 }}>
+      <main className="mx-auto px-6 pt-12 pb-20 md:pt-16 md:pb-28" style={{ maxWidth: 1150 }}>
         <div className="text-xs tracking-[0.24em] uppercase mb-4" style={{ color: C.lime }}>{eyebrow}</div>
-        <h1 className="font-semibold tracking-tight mb-12" style={{ fontSize: "clamp(1.9rem, 4vw, 2.9rem)", lineHeight: 1.1 }}>
+        <h1 className="font-semibold tracking-tight mb-8 md:mb-12" style={{ fontSize: "clamp(1.9rem, 4vw, 2.9rem)", lineHeight: 1.1 }}>
           {title}
         </h1>
         {children}

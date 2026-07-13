@@ -884,7 +884,7 @@ export default function HoodwireLanding() {
 
         {/* ——— HERO ——— */}
         <section id="protocol" className="relative">
-          <div className="relative mx-auto px-6 grid lg:grid-cols-2 gap-14 items-center" style={{ maxWidth: 1150, paddingTop: 104, paddingBottom: 110 }}>
+          <div className="relative mx-auto px-6 grid lg:grid-cols-2 gap-10 lg:gap-14 items-center" style={{ maxWidth: 1150, paddingTop: "clamp(72px, 12vw, 104px)", paddingBottom: "clamp(72px, 12vw, 110px)" }}>
             <Reveal>
               <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full mb-7" style={{ border: `1px solid ${C.limeBorder}`, color: C.mute, background: "rgba(11,14,12,0.5)", backdropFilter: "blur(6px)" }}>
                 <span className="w-1.5 h-1.5 rounded-full hw-pulse" style={{ background: C.lime }} />
@@ -893,7 +893,7 @@ export default function HoodwireLanding() {
               <h1
                 className="font-bold tracking-tight"
                 style={{
-                  fontSize: "clamp(2.6rem, 6vw, 5rem)",
+                  fontSize: "clamp(2.1rem, 7vw, 5rem)",
                   lineHeight: 1.04,
                   letterSpacing: "-0.03em",
                   textShadow: "0 2px 40px rgba(0,0,0,0.5)",
@@ -953,7 +953,7 @@ export default function HoodwireLanding() {
         </section>
 
         {/* ——— THREE STEPS ——— */}
-        <section className="mx-auto px-6" style={{ maxWidth: 1150, paddingTop: 130, paddingBottom: 130 }}>
+        <section className="mx-auto px-6" style={{ maxWidth: 1150, paddingTop: "clamp(72px, 13vw, 130px)", paddingBottom: "clamp(72px, 13vw, 130px)" }}>
           <Reveal>
             <Eyebrow>How it works</Eyebrow>
             <SectionTitle>One call. <Lime>Best route.</Lime></SectionTitle>
@@ -978,7 +978,7 @@ export default function HoodwireLanding() {
         </section>
 
         {/* ——— INTEGRATION ——— */}
-        <section id="integrate" className="mx-auto px-6" style={{ maxWidth: 1150, paddingBottom: 130 }}>
+        <section id="integrate" className="mx-auto px-6" style={{ maxWidth: 1150, paddingBottom: "clamp(72px, 13vw, 130px)" }}>
           <div className="grid lg:grid-cols-5 gap-12 items-start">
             <Reveal className="lg:col-span-2">
               <Eyebrow>Integration</Eyebrow>
@@ -1010,7 +1010,7 @@ export default function HoodwireLanding() {
         </section>
 
         {/* ——— BUDGET CONTROLS ——— */}
-        <section className="mx-auto px-6" style={{ maxWidth: 1150, paddingBottom: 130 }}>
+        <section className="mx-auto px-6" style={{ maxWidth: 1150, paddingBottom: "clamp(72px, 13vw, 130px)" }}>
           <div className="grid lg:grid-cols-5 gap-12 items-start">
             <Reveal className="lg:col-span-2 lg:sticky lg:top-28">
               <Eyebrow>Spend controls</Eyebrow>
@@ -1027,7 +1027,7 @@ export default function HoodwireLanding() {
         </section>
 
         {/* ——— WHY ROBINHOOD CHAIN ——— */}
-        <section className="mx-auto px-6" style={{ maxWidth: 1150, paddingBottom: 130 }}>
+        <section className="mx-auto px-6" style={{ maxWidth: 1150, paddingBottom: "clamp(72px, 13vw, 130px)" }}>
           <Reveal>
             <Eyebrow>The chain</Eyebrow>
             <SectionTitle>Why <Lime>Robinhood Chain.</Lime></SectionTitle>
@@ -1050,7 +1050,7 @@ export default function HoodwireLanding() {
         </section>
 
         {/* ——— VENDOR REGISTRY ——— */}
-        <section id="registry" className="mx-auto px-6" style={{ maxWidth: 1150, paddingBottom: 130 }}>
+        <section id="registry" className="mx-auto px-6" style={{ maxWidth: 1150, paddingBottom: "clamp(72px, 13vw, 130px)" }}>
           <Reveal>
             <div className="flex flex-wrap items-end justify-between gap-6">
               <div>
@@ -1105,7 +1105,7 @@ export default function HoodwireLanding() {
 
         {/* ——— FOOTER ——— */}
         <footer id="docs" style={{ borderTop: `1px solid ${C.line}`, background: "rgba(11,14,12,0.6)", backdropFilter: "blur(8px)" }}>
-          <div className="mx-auto px-6 py-16 grid md:grid-cols-4 gap-10" style={{ maxWidth: 1150 }}>
+          <div className="mx-auto px-6 py-12 md:py-16 grid md:grid-cols-4 gap-10" style={{ maxWidth: 1150 }}>
             <div>
               <div className="flex items-center gap-2 font-semibold text-lg mb-4">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-md text-[13px] font-bold" style={{ background: C.lime, color: C.bg }}>⌁</span>

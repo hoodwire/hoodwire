@@ -107,7 +107,7 @@ export default function Metrics() {
         <div className="space-y-3">
           {share.map(([id, pct]) => (
             <div key={id} className="flex items-center gap-4 text-sm">
-              <span className="w-40 shrink-0" style={{ ...mono, color: C.ink }}>{id}</span>
+              <span className="w-28 sm:w-40 shrink-0" style={{ ...mono, color: C.ink }}>{id}</span>
               <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "rgba(138,148,132,0.15)" }}>
                 <div className="h-full rounded-full" style={{ width: `${pct}%`, background: C.lime, opacity: 0.85 }} />
               </div>
