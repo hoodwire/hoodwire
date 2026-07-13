@@ -40,7 +40,7 @@ export function DemoDashboard() {
           <button onClick={() => move(1)} className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold" style={{ background: C.lime, color: C.bg }}>Top up</button>
           <button onClick={() => move(-1)} className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold" style={{ border: `1px solid ${C.line}`, color: C.ink }}>Withdraw</button>
         </div>
-        <p className="text-xs mt-3" style={{ color: C.mute }}>Demo mode — no real funds. Connect a wallet on the local chain for live balances.</p>
+        <p className="text-xs mt-3" style={{ color: C.mute }}>Demo mode — no real funds. Connect a wallet on Robinhood Chain Testnet for live balances.</p>
 
         <div className="mt-6">
           <div className="flex justify-between text-xs mb-1">
