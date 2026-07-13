@@ -1,0 +1,66 @@
+name: Deploy to Robinhood testnet
+
+# Manual only — never runs automatically.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    name: Deploy contracts to Robinhood Chain Testnet
+    runs-on: ubuntu-latest
+    env:
+      RPC_URL: https://rpc.testnet.chain.robinhood.com
+      CHAIN_ID: "46630"
+      EXPLORER: https://explorer.testnet.chain.robinhood.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install forge-std
+        working-directory: contracts
+        run: |
+          git config --global user.email "ci@hoodwire.local"
+          git config --global user.name "hoodwire ci"
+          forge install foundry-rs/forge-std
+
+      - name: Run contract tests
+        working-directory: contracts
+        run: forge test -vvv
+
+      - name: Check deployer has gas
+        working-directory: contracts
+        run: |
+          ADDR=$(cast wallet address --private-key "${{ secrets.TESTNET_DEPLOYER_KEY }}")
+          echo "deployer: $ADDR"
+          BAL=$(cast balance "$ADDR" --rpc-url "$RPC_URL")
+          echo "balance (wei): $BAL"
+          if [ "$BAL" = "0" ]; then
+            echo "::error::deployer has 0 ETH — fund it at https://faucet.testnet.chain.robinhood.com"
+            exit 1
+          fi
+
+      - name: Deploy
+        working-directory: contracts
+        run: |
+          forge script script/Deploy.s.sol:Deploy \
+            --rpc-url "$RPC_URL" \
+            --broadcast \
+            --private-key "${{ secrets.TESTNET_DEPLOYER_KEY }}" \
+            --slow -vvv
+
+      - name: Extract public addresses
+        run: node scripts/extract-deployment.mjs "$CHAIN_ID" robinhood-testnet "$RPC_URL" "$EXPLORER"
+
+      - name: Commit deployment addresses
+        run: |
+          git config user.email "ci@hoodwire.local"
+          git config user.name "hoodwire ci"
+          git add deployments/robinhood-testnet.json
+          git commit -m "chore(deploy): record Robinhood testnet contract addresses" || echo "no changes"
+          git push
