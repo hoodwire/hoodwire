@@ -52,7 +52,7 @@ export function LiveDashboard({ deployment, address }: { deployment: Deployment;
     <div className="grid lg:grid-cols-3 gap-6">
       <WalletCard deployment={deployment} address={address} isOperator={isOperator} escrowBal={escrowBal} walletBal={walletBal} spentToday={spentToday} dailyLimit={dailyLimit} reload={reload} />
       <LimitCard deployment={deployment} dailyLimit={dailyLimit} reload={reload} />
-      <ActivityCard />
+      <ActivityCard deployment={deployment} />
     </div>
   );
 }

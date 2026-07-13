@@ -1,34 +1,75 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useWatchContractEvent } from "wagmi";
+import { formatUnits, hexToString } from "viem";
 import { Card, C, mono } from "@/components/site-chrome";
+import { type Deployment, USDG_DECIMALS } from "@/lib/chain";
+import { escrowAbi } from "@/lib/abis";
 import { useEventStream } from "./use-event-stream";
 
-/* Simulated fallback when the gateway SSE feed isn't connected. */
+/* Simulated fallback when there's no onchain deployment and no gateway feed. */
 const FEED = [
   { cap: "get_stock_price", vendor: "chainlink-feeds", fee: 0.002, ms: 96 },
   { cap: "execute_swap", vendor: "uniswap-v3", fee: 0.14, ms: 612 },
   { cap: "portfolio_snapshot", vendor: "hoodwire-core", fee: 0.005, ms: 214 },
   { cap: "get_lending_rate", vendor: "morpho-blue", fee: 0.02, ms: 236 },
   { cap: "execute_swap", vendor: "pleiades", fee: 0.11, ms: 596 },
-  { cap: "get_stock_price", vendor: "chainlink-feeds", fee: 0.002, ms: 91 },
   { cap: "supply_collateral", vendor: "morpho-blue", fee: 0.08, ms: 784 },
-  { cap: "bridge_quote", vendor: "hoodwire-core", fee: 0.01, ms: 342 },
 ];
 
-interface Row { id: number | string; cap: string; vendor: string; fee: number; ms: number; }
+interface Row { id: string | number; cap: string; vendor: string; fee: number; ms: number; }
 
-export function ActivityCard({ onSpend }: { onSpend?: (fee: number) => void }) {
+function decodeVendor(vendorId?: `0x${string}`): string {
+  if (!vendorId) return "vendor";
+  try {
+    // bytes32 is right-padded with null bytes — keep only printable ASCII.
+    const raw = hexToString(vendorId, { size: 32 });
+    let s = "";
+    for (const ch of raw) if (ch.charCodeAt(0) >= 32) s += ch;
+    return s || "vendor";
+  } catch {
+    return "vendor";
+  }
+}
+
+export function ActivityCard({ onSpend, deployment }: { onSpend?: (fee: number) => void; deployment?: Deployment }) {
+  const onchainMode = !!deployment;
+
+  // Real onchain activity: SettlementEscrow.Charged events.
+  const [chain, setChain] = useState<Row[]>([]);
+  useWatchContractEvent({
+    address: deployment?.settlementEscrow,
+    abi: escrowAbi,
+    eventName: "Charged",
+    enabled: onchainMode,
+    poll: true,
+    pollingInterval: 4000,
+    onLogs(logs) {
+      const rows = logs.map((l): Row => {
+        const args = (l as { args?: { vendorId?: `0x${string}`; fee?: bigint; latencyMs?: number } }).args ?? {};
+        return {
+          id: `${(l as { transactionHash?: string }).transactionHash}-${(l as { logIndex?: number }).logIndex}`,
+          cap: "capability call",
+          vendor: decodeVendor(args.vendorId),
+          fee: args.fee ? Number(formatUnits(args.fee, USDG_DECIMALS)) : 0,
+          ms: args.latencyMs ?? 0,
+        };
+      });
+      setChain((prev) => [...rows.reverse(), ...prev].slice(0, 8));
+    },
+  });
+
+  // Gateway SSE (only when NEXT_PUBLIC_GATEWAY_URL is configured).
   const { events, connected } = useEventStream(8);
-  const live = connected && events.length > 0;
+  const sseLive = connected && events.length > 0;
 
+  // Simulated fallback.
   const [running, setRunning] = useState(true);
   const [sim, setSim] = useState<Row[]>([]);
   const seq = useRef(0);
-
-  // Run the simulator only while the live feed is unavailable.
   useEffect(() => {
-    if (live || !running) return;
+    if (onchainMode || sseLive || !running) return;
     const id = setInterval(() => {
       const f = FEED[seq.current % FEED.length];
       seq.current += 1;
@@ -37,21 +78,24 @@ export function ActivityCard({ onSpend }: { onSpend?: (fee: number) => void }) {
     }, 2600);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live, running]);
+  }, [onchainMode, sseLive, running]);
 
-  const rows: Row[] = live
-    ? events.map((e) => ({ id: e.id, cap: e.capability, vendor: e.vendor, fee: e.feeUsdg, ms: e.routingMs + e.executionMs }))
-    : sim;
+  const mode = onchainMode ? "onchain" : sseLive ? "live" : "simulated";
+  const rows: Row[] = onchainMode
+    ? chain
+    : sseLive
+      ? events.map((e) => ({ id: e.id, cap: e.capability, vendor: e.vendor, fee: e.feeUsdg, ms: e.routingMs + e.executionMs }))
+      : sim;
 
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
         <div className="text-xs uppercase tracking-widest" style={{ color: C.lime }}>
-          <span className="inline-block w-1.5 h-1.5 rounded-full mr-2 align-middle" style={{ background: live || running ? C.lime : C.mute }} />
+          <span className="inline-block w-1.5 h-1.5 rounded-full mr-2 align-middle" style={{ background: mode === "simulated" && !running ? C.mute : C.lime }} />
           Agent activity
-          <span className="ml-2 lowercase tracking-normal" style={{ color: live ? C.lime : C.mute }}>· {live ? "live" : "simulated"}</span>
+          <span className="ml-2 lowercase tracking-normal" style={{ color: mode === "simulated" ? C.mute : C.lime }}>· {mode}</span>
         </div>
-        {!live && (
+        {mode === "simulated" && (
           <button
             onClick={() => setRunning((r) => !r)}
             className="text-xs px-3 py-1 rounded-full"
@@ -62,7 +106,11 @@ export function ActivityCard({ onSpend }: { onSpend?: (fee: number) => void }) {
         )}
       </div>
       <div className="space-y-2 text-xs" style={mono}>
-        {rows.length === 0 && <div style={{ color: C.mute }}>waiting for calls…</div>}
+        {rows.length === 0 && (
+          <div style={{ color: C.mute }}>
+            {onchainMode ? "waiting for onchain calls — try the test agent call" : "waiting for calls…"}
+          </div>
+        )}
         {rows.map((e) => (
           <div key={e.id} className="flex justify-between gap-2 py-1.5" style={{ borderBottom: `1px solid ${C.line}` }}>
             <span style={{ color: C.ink }}>{e.cap}</span>
