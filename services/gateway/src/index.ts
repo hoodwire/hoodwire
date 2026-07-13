@@ -33,7 +33,18 @@ async function handle(capability: Capability, params: Record<string, unknown>) {
 
   const adapter = ADAPTERS.find((a) => a.id === routed.adapterId)!;
   const result = await adapter.execute(capability, params);
-  charge(USER, routed.winner.priceUsdg);
+
+  const settled = await charge(USER, routed.winner.priceUsdg, {
+    vendor: adapter.id,
+    ok: result.ok,
+    latencyMs: result.actualLatencyMs,
+  });
+  if (!settled.ok) {
+    return {
+      content: [{ type: "text" as const, text: `blocked (${settled.reason}): ${settled.detail}` }],
+      isError: true,
+    };
+  }
   recordCall(adapter.id, result.ok, result.actualLatencyMs);
 
   calls.publish({

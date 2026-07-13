@@ -11,6 +11,7 @@
   "dependencies": {
     "@hoodwire/sdk": "*",
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "viem": "^2.21.19",
     "zod": "^3.23.0"
   },
   "devDependencies": {

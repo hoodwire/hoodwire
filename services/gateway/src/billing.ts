@@ -1,9 +1,10 @@
 import { DEFAULT_BUDGET, type BudgetConfig } from "@hoodwire/sdk";
+import { onchainEnabled, chargeOnchain, type OnchainCharge } from "./onchain.js";
 
 /**
- * In-memory USDG ledger mirroring SettlementEscrow semantics.
- * TODO(onchain): replace with escrow.charge() via viem using the operator wallet;
- * keep this as an optimistic cache in front of the chain.
+ * In-memory USDG ledger mirroring SettlementEscrow semantics. When an escrow address
+ * and operator key are configured, this acts as an optimistic cache in front of
+ * SettlementEscrow.charge() (see charge() below); otherwise it is the source of truth.
  */
 interface Account {
   balanceUsdg: number;
@@ -44,10 +45,34 @@ export function precheck(user: string, feeUsdg: number): Precheck {
   return { ok: true, warnLowBalance: a.balanceUsdg - feeUsdg <= lowBalanceAlertUsdg };
 }
 
-export function charge(user: string, feeUsdg: number): void {
+export type ChargeReason = Extract<OnchainCharge, { ok: false }>["reason"];
+export type ChargeResult = { ok: true } | { ok: false; reason: ChargeReason; detail: string };
+
+/**
+ * Charge a settled call. Updates the in-memory ledger optimistically, then—if onchain
+ * settlement is enabled—commits through SettlementEscrow.charge(). A revert rolls back
+ * the optimistic update and surfaces the same tool error the precheck would.
+ */
+export async function charge(
+  user: string,
+  feeUsdg: number,
+  ctx?: { vendor: string; ok: boolean; latencyMs: number },
+): Promise<ChargeResult> {
   const a = getAccount(user);
+  const prevBalance = a.balanceUsdg;
+  const prevSpent = a.spentTodayUsdg;
   a.balanceUsdg = Number((a.balanceUsdg - feeUsdg).toFixed(6));
   a.spentTodayUsdg = Number((a.spentTodayUsdg + feeUsdg).toFixed(6));
+
+  if (onchainEnabled && ctx) {
+    const settled = await chargeOnchain(feeUsdg, ctx.vendor, ctx.ok, ctx.latencyMs);
+    if (!settled.ok) {
+      a.balanceUsdg = prevBalance; // roll back the optimistic cache
+      a.spentTodayUsdg = prevSpent;
+      return { ok: false, reason: settled.reason, detail: settled.detail };
+    }
+  }
+  return { ok: true };
 }
 
 export function setBudget(user: string, patch: Partial<BudgetConfig>): BudgetConfig {

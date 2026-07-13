@@ -117,7 +117,7 @@ deployment.
 - [x] MCP gateway with auction router + budget controls (in-memory billing)
 - [x] Solidity: VendorRegistry, Reputation, SettlementEscrow + tests
 - [ ] Wire adapters to real protocols via `viem` (see TODOs in `services/gateway/src/adapters`)
-- [ ] Charge through `SettlementEscrow` instead of in-memory ledger
+- [x] Charge through `SettlementEscrow.charge()` when `SETTLEMENT_ESCROW_ADDRESS` is set
 - [ ] Streamable HTTP transport + API-key auth for hosted MCP
 - [ ] Indexer + real metrics feed for `apps/web`
 

@@ -70,7 +70,8 @@ Turning the demo dashboard into a working app, verified through CI on each step:
 - [ ] **Phase 2** — wallet connect + real escrow reads/writes on `/dashboard`.
 - [x] **Phase 3** — HTTP+SSE activity feed from the gateway (`GET /events`,
   `GET /metrics/rolling`) into `/dashboard` and `/metrics`.
-- [ ] **Phase 4** — gateway billing settled through `SettlementEscrow.charge()`.
+- [x] **Phase 4** — gateway billing settled through `SettlementEscrow.charge()` when
+  `SETTLEMENT_ESCROW_ADDRESS` is set (in-memory ledger becomes an optimistic cache).
 
 ## Roadmap
 
