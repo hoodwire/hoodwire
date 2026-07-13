@@ -33,25 +33,35 @@ jobs:
         working-directory: contracts
         run: forge test -vvv
 
-      - name: Check deployer has gas
+      - name: Check deployer key and gas
         working-directory: contracts
+        env:
+          DEPLOYER_KEY: ${{ secrets.TESTNET_DEPLOYER_KEY }}
         run: |
-          ADDR=$(cast wallet address --private-key "${{ secrets.TESTNET_DEPLOYER_KEY }}")
+          if [ -z "$DEPLOYER_KEY" ]; then
+            echo "::error::Secret TESTNET_DEPLOYER_KEY is empty or not set. Add it under Settings -> Secrets and variables -> Actions (click the green 'Add secret' button), then re-run."
+            exit 1
+          fi
+          case "$DEPLOYER_KEY" in 0x*) ;; *) DEPLOYER_KEY="0x$DEPLOYER_KEY" ;; esac
+          ADDR=$(cast wallet address --private-key "$DEPLOYER_KEY")
           echo "deployer: $ADDR"
           BAL=$(cast balance "$ADDR" --rpc-url "$RPC_URL")
           echo "balance (wei): $BAL"
           if [ "$BAL" = "0" ]; then
-            echo "::error::deployer has 0 ETH — fund it at https://faucet.testnet.chain.robinhood.com"
+            echo "::error::deployer $ADDR has 0 ETH — fund it at https://faucet.testnet.chain.robinhood.com"
             exit 1
           fi
 
       - name: Deploy
         working-directory: contracts
+        env:
+          DEPLOYER_KEY: ${{ secrets.TESTNET_DEPLOYER_KEY }}
         run: |
+          case "$DEPLOYER_KEY" in 0x*) ;; *) DEPLOYER_KEY="0x$DEPLOYER_KEY" ;; esac
           forge script script/Deploy.s.sol:Deploy \
             --rpc-url "$RPC_URL" \
             --broadcast \
-            --private-key "${{ secrets.TESTNET_DEPLOYER_KEY }}" \
+            --private-key "$DEPLOYER_KEY" \
             --slow -vvv
 
       - name: Extract public addresses
