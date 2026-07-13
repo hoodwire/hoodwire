@@ -8,6 +8,7 @@
     "chain:dev": "node scripts/chain-dev.mjs",
     "dev:web": "npm run dev --workspace apps/web",
     "dev:gateway": "npm run dev --workspace services/gateway",
+    "serve:gateway": "npm run serve --workspace services/gateway",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test:contracts": "cd contracts && forge test -vv"

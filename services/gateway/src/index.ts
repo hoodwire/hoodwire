@@ -9,11 +9,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import type { Capability } from "@hoodwire/sdk";
-import { route } from "./router.js";
 import { ADAPTERS } from "./adapters/index.js";
-import { precheck, charge, getAccount, setBudget } from "./billing.js";
-import { recordCall, snapshot } from "./reputation.js";
-import { calls } from "./events.js";
+import { getAccount, setBudget } from "./billing.js";
+import { snapshot } from "./reputation.js";
+import { runCapability } from "./pipeline.js";
 import { startHttpServer } from "./server.js";
 
 // single-user dev mode; hosted mode derives this from the bearer token
@@ -22,54 +21,14 @@ const USER = "dev-user";
 const server = new McpServer({ name: "hoodwire", version: "0.1.0" });
 
 async function handle(capability: Capability, params: Record<string, unknown>) {
-  const routed = await route(capability, params);
-  const pre = precheck(USER, routed.winner.priceUsdg);
-  if (!pre.ok) {
+  const res = await runCapability(capability, params, USER);
+  if (!res.ok) {
     return {
-      content: [{ type: "text" as const, text: `blocked (${pre.reason}): ${pre.detail}` }],
+      content: [{ type: "text" as const, text: `blocked (${res.reason}): ${res.detail}` }],
       isError: true,
     };
   }
-
-  const adapter = ADAPTERS.find((a) => a.id === routed.adapterId)!;
-  const result = await adapter.execute(capability, params);
-
-  const settled = await charge(USER, routed.winner.priceUsdg, {
-    vendor: adapter.id,
-    ok: result.ok,
-    latencyMs: result.actualLatencyMs,
-  });
-  if (!settled.ok) {
-    return {
-      content: [{ type: "text" as const, text: `blocked (${settled.reason}): ${settled.detail}` }],
-      isError: true,
-    };
-  }
-  recordCall(adapter.id, result.ok, result.actualLatencyMs);
-
-  calls.publish({
-    capability,
-    vendor: adapter.id,
-    feeUsdg: routed.winner.priceUsdg,
-    routingMs: routed.routedInMs,
-    executionMs: result.actualLatencyMs,
-    ok: result.ok,
-    losingBids: routed.losers.map((l) => `${l.vendorId} @ ${l.priceUsdg} USDG`),
-  });
-
-  const acct = getAccount(USER);
-  const summary = {
-    capability,
-    routedTo: adapter.id,
-    feeUsdg: routed.winner.priceUsdg,
-    routingMs: routed.routedInMs,
-    executionMs: result.actualLatencyMs,
-    losingBids: routed.losers.map((l) => `${l.vendorId} @ ${l.priceUsdg} USDG`),
-    balanceUsdg: acct.balanceUsdg,
-    ...(pre.warnLowBalance ? { warning: `low balance — below ${acct.budget.lowBalanceAlertUsdg} USDG alert` } : {}),
-    result: result.data,
-  };
-  return { content: [{ type: "text" as const, text: JSON.stringify(summary, null, 2) }] };
+  return { content: [{ type: "text" as const, text: JSON.stringify(res.summary, null, 2) }] };
 }
 
 server.tool(

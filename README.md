@@ -64,15 +64,36 @@ Then call tools like `execute_swap`, `get_stock_price` — the gateway runs the 
 auction and returns the winning route. Vendors are currently **simulated adapters**;
 each has a `// TODO(onchain)` marker where real `viem` calls go.
 
-Alongside the stdio MCP server, the gateway serves an HTTP sidecar on `GATEWAY_PORT`
+Alongside the stdio MCP server, the gateway serves an HTTP API on `GATEWAY_PORT`
 (default `8787`) that shares the same in-process router and billing:
 
+- `POST /call/:capability` — run a capability (JSON body = params). Requires
+  `Authorization: Bearer <GATEWAY_API_KEY>` when that env var is set.
 - `GET /events` — Server-Sent Events, one message per settled call.
 - `GET /metrics/rolling` — rolling aggregate of recent calls.
+- `GET /health`, `GET /capabilities`.
 
-The dashboard and `/metrics` page subscribe to these when the gateway is running
-(`NEXT_PUBLIC_GATEWAY_URL`, default `http://127.0.0.1:8787`) and fall back to demo data
-otherwise.
+The dashboard and `/metrics` page subscribe to `/events` + `/metrics/rolling` only when
+`NEXT_PUBLIC_GATEWAY_URL` is set (unset on the public site, so it falls back to onchain /
+demo data and never probes localhost).
+
+## Host the gateway
+
+`npm run serve:gateway` starts the HTTP API without stdio — this is what a hosted
+deployment runs. On [Railway](https://railway.app) (repo already includes `railway.json`):
+
+1. New Project → Deploy from GitHub repo → pick this repo.
+2. Set environment variables:
+   - `RPC_URL`, `SETTLEMENT_ESCROW_ADDRESS`, `REPUTATION_ADDRESS`, `USDG_ADDRESS`,
+     `VENDOR_REGISTRY_ADDRESS` (from `deployments/robinhood-testnet.json`)
+   - `OPERATOR_PRIVATE_KEY` (the testnet operator key — a **secret**)
+   - `GATEWAY_API_KEY` (any strong random string, to protect `POST /call`)
+3. Deploy. Railway injects `PORT`; the server binds `0.0.0.0` automatically.
+4. Point the site at it: set `NEXT_PUBLIC_GATEWAY_URL=https://<your-app>.up.railway.app`
+   in the Vercel project env, then redeploy.
+
+With `SETTLEMENT_ESCROW_ADDRESS` + `OPERATOR_PRIVATE_KEY` set, each `POST /call` settles
+through `SettlementEscrow.charge()` onchain; without them it uses the in-memory ledger.
 
 ### Run a local chain
 
