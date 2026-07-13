@@ -1,5 +1,10 @@
-/** Base URL of the gateway HTTP/SSE sidecar. Unset in production → falls back to demo data. */
-export const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL ?? "http://127.0.0.1:8787";
+/**
+ * Base URL of the gateway HTTP/SSE sidecar, or null when not configured.
+ * On the public site this is null so we never probe localhost / a private network
+ * (which triggers Chrome's "access other apps on this device" prompt). For local dev,
+ * set NEXT_PUBLIC_GATEWAY_URL=http://127.0.0.1:8787 in apps/web/.env.local.
+ */
+export const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL ?? null;
 
 export interface SettledCall {
   id: number;

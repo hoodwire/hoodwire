@@ -25,6 +25,7 @@ export default function Metrics() {
   const [rolling, setRolling] = useState<RollingMetrics | null>(null);
 
   useEffect(() => {
+    if (!GATEWAY_URL) return;
     let cancelled = false;
     const pull = () => {
       fetch(`${GATEWAY_URL}/metrics/rolling`)

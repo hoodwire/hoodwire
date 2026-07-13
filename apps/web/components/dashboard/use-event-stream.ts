@@ -9,6 +9,7 @@ export function useEventStream(limit = 8): { events: SettledCall[]; connected: b
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
+    if (!GATEWAY_URL) return;
     const es = new EventSource(`${GATEWAY_URL}/events`);
     es.onopen = () => setConnected(true);
     es.onmessage = (ev) => {
