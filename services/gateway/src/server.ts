@@ -18,6 +18,18 @@ const API_KEY = process.env.GATEWAY_API_KEY ?? "";
 
 const CAPABILITIES: string[] = [...new Set(ADAPTERS.flatMap((a) => a.capabilities))];
 
+// Auth via `Authorization: Bearer <key>` OR a `?key=<key>` query param
+// (the latter lets MCP clients that only take a URL, like Claude's connector UI, authenticate).
+function authorized(req: IncomingMessage): boolean {
+  if (!API_KEY) return true;
+  if (req.headers["authorization"] === `Bearer ${API_KEY}`) return true;
+  try {
+    return new URL(req.url ?? "/", "http://gateway").searchParams.get("key") === API_KEY;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * HTTP surface for the gateway, shared with the MCP server via the same in-process
  * router/billing/pipeline:
@@ -54,16 +66,12 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   // MCP-over-HTTP (Streamable HTTP) — connect Claude Desktop/Code or any MCP client here.
   if (path === "/mcp") {
-    if (API_KEY && req.headers["authorization"] !== `Bearer ${API_KEY}`) {
-      return json(res, { error: "unauthorized" }, 401);
-    }
+    if (!authorized(req)) return json(res, { error: "unauthorized" }, 401);
     return handleMcp(req, res);
   }
 
   if (req.method === "POST" && path.startsWith("/call/")) {
-    if (API_KEY && req.headers["authorization"] !== `Bearer ${API_KEY}`) {
-      return json(res, { error: "unauthorized" }, 401);
-    }
+    if (!authorized(req)) return json(res, { error: "unauthorized" }, 401);
     const capStr = path.slice("/call/".length);
     if (!CAPABILITIES.includes(capStr)) {
       return json(res, { error: `unknown capability: ${capStr}`, capabilities: CAPABILITIES }, 404);
