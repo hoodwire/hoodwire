@@ -22,7 +22,9 @@ const chain = defineChain({
 
 let cached: ReturnType<typeof build> | null = null;
 function build() {
-  const account = privateKeyToAccount(CONFIG.operatorKey as Hex);
+  const raw = CONFIG.operatorKey;
+  const key = (raw.startsWith("0x") ? raw : `0x${raw}`) as Hex;
+  const account = privateKeyToAccount(key);
   return {
     account,
     escrow: CONFIG.escrowAddress as Hex,
