@@ -51,15 +51,21 @@ export async function chargeOnchain(
   const fee = parseUnits(feeUsdg.toFixed(6) as `${number}`, 6);
   const vendorId = stringToHex(vendor, { size: 32 });
   try {
+    // Legacy (gasPrice) tx — matches how forge deploys on this L2 and avoids
+    // EIP-1559 fee methods the RPC rejects with -32602.
+    const gasPrice = await publicClient.getGasPrice();
     const hash = await walletClient.writeContract({
       address: escrow,
       abi: escrowAbi,
       functionName: "charge",
       args: [account.address, vendorId, account.address, fee, success, Math.min(Math.round(latencyMs), 4_294_967_295)],
+      type: "legacy",
+      gasPrice,
     });
     await publicClient.waitForTransactionReceipt({ hash });
     return { ok: true, hash };
   } catch (e) {
+    console.error("[charge] onchain error:", e);
     const revert = e instanceof BaseError ? e.walk((err) => err instanceof ContractFunctionRevertedError) : null;
     if (revert instanceof ContractFunctionRevertedError) {
       const name = revert.data?.errorName;
