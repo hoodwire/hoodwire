@@ -1070,11 +1070,11 @@ export default function HoodwireLanding() {
           </Reveal>
           <Reveal delay={120}>
             <div className="mt-10 rounded-2xl overflow-hidden overflow-x-auto" style={{ border: `1px solid ${C.line}`, background: "rgba(13,17,12,0.7)", backdropFilter: "blur(8px)" }}>
-              <table className="w-full text-xs sm:text-sm" style={{ minWidth: 500 }}>
+              <table className="w-full text-xs sm:text-sm sm:min-w-[500px]">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-widest" style={{ color: C.mute, borderBottom: `1px solid ${C.line}` }}>
-                    {["Vendor", "Type", "Reputation", "p50 latency", "Fee range"].map((h) => (
-                      <th key={h} className="px-3 sm:px-6 py-3 sm:py-4 font-medium">{h}</th>
+                    {["Vendor", "Type", "Reputation", "p50 latency", "Fee range"].map((h, i) => (
+                      <th key={h} className={`px-3 sm:px-6 py-3 sm:py-4 font-medium ${i >= 3 ? "hidden sm:table-cell" : ""}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1090,8 +1090,8 @@ export default function HoodwireLanding() {
                       <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.ink }}>{v.name}</td>
                       <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.mute }}>{v.type}</td>
                       <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.lime }}>◆ {v.rep}</td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.mute }}>{v.p50}</td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.mute }}>{v.fee}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell" style={{ color: C.mute }}>{v.p50}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell" style={{ color: C.mute }}>{v.fee}</td>
                     </tr>
                   ))}
                 </tbody>
