@@ -376,7 +376,7 @@ function SectionTitle({ children }) {
   return (
     <h2
       className="font-semibold tracking-tight"
-      style={{ color: C.ink, fontSize: "clamp(1.9rem, 4vw, 2.9rem)", lineHeight: 1.1 }}
+      style={{ color: C.ink, fontSize: "clamp(1.55rem, 4.5vw, 2.9rem)", lineHeight: 1.12 }}
     >
       {children}
     </h2>
@@ -655,7 +655,7 @@ function Slider({ label, index, value, setValue, min, max, step, unit, note, fmt
         <span className="text-xs tracking-widest uppercase" style={{ color: C.mute }}>
           {String(index + 1).padStart(2, "0")} · {label}
         </span>
-        <span className="text-2xl font-semibold tabular-nums" style={{ color: C.lime, textShadow: "0 0 24px rgba(198,245,62,0.35)" }}>
+        <span className="text-lg sm:text-2xl font-semibold tabular-nums whitespace-nowrap" style={{ color: C.lime, textShadow: "0 0 24px rgba(198,245,62,0.35)" }}>
           {fmt(value)}
         </span>
       </div>
@@ -1070,11 +1070,11 @@ export default function HoodwireLanding() {
           </Reveal>
           <Reveal delay={120}>
             <div className="mt-10 rounded-2xl overflow-hidden overflow-x-auto" style={{ border: `1px solid ${C.line}`, background: "rgba(13,17,12,0.7)", backdropFilter: "blur(8px)" }}>
-              <table className="w-full text-sm" style={{ minWidth: 620 }}>
+              <table className="w-full text-xs sm:text-sm" style={{ minWidth: 500 }}>
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-widest" style={{ color: C.mute, borderBottom: `1px solid ${C.line}` }}>
                     {["Vendor", "Type", "Reputation", "p50 latency", "Fee range"].map((h) => (
-                      <th key={h} className="px-6 py-4 font-medium">{h}</th>
+                      <th key={h} className="px-3 sm:px-6 py-3 sm:py-4 font-medium">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1087,11 +1087,11 @@ export default function HoodwireLanding() {
                       onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(198,245,62,0.05)")}
                       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                     >
-                      <td className="px-6 py-4" style={{ color: C.ink }}>{v.name}</td>
-                      <td className="px-6 py-4" style={{ color: C.mute }}>{v.type}</td>
-                      <td className="px-6 py-4" style={{ color: C.lime }}>◆ {v.rep}</td>
-                      <td className="px-6 py-4" style={{ color: C.mute }}>{v.p50}</td>
-                      <td className="px-6 py-4" style={{ color: C.mute }}>{v.fee}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.ink }}>{v.name}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.mute }}>{v.type}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.lime }}>◆ {v.rep}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.mute }}>{v.p50}</td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4" style={{ color: C.mute }}>{v.fee}</td>
                     </tr>
                   ))}
                 </tbody>
