@@ -14,8 +14,8 @@ export type OnchainCharge =
   | { ok: false; reason: "insufficient_balance" | "daily_limit" | "onchain_error"; detail: string };
 
 const chain = defineChain({
-  id: 31337,
-  name: "Anvil · Hoodwire local",
+  id: Number(process.env.CHAIN_ID ?? 31337),
+  name: "hoodwire-target",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: { default: { http: [CONFIG.rpcUrl] } },
 });
