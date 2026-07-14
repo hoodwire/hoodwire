@@ -1,8 +1,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Capability } from "@hoodwire/sdk";
 import { calls, type SettledCall } from "./events.js";
 import { rollingMetrics } from "./metrics.js";
 import { runCapability } from "./pipeline.js";
+import { buildMcpServer } from "./mcp-server.js";
 import { ADAPTERS } from "./adapters/index.js";
 
 const CORS: Record<string, string> = {
@@ -50,6 +52,14 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   if (path === "/metrics/rolling") return json(res, rollingMetrics());
   if (path === "/events") return handleSse(req, res);
 
+  // MCP-over-HTTP (Streamable HTTP) — connect Claude Desktop/Code or any MCP client here.
+  if (path === "/mcp") {
+    if (API_KEY && req.headers["authorization"] !== `Bearer ${API_KEY}`) {
+      return json(res, { error: "unauthorized" }, 401);
+    }
+    return handleMcp(req, res);
+  }
+
   if (req.method === "POST" && path.startsWith("/call/")) {
     if (API_KEY && req.headers["authorization"] !== `Bearer ${API_KEY}`) {
       return json(res, { error: "unauthorized" }, 401);
@@ -71,6 +81,19 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 function json(res: ServerResponse, body: unknown, status = 200): void {
   res.writeHead(status, { "Content-Type": "application/json", ...CORS });
   res.end(JSON.stringify(body));
+}
+
+// Stateless MCP-over-HTTP: a fresh server + transport per request.
+async function handleMcp(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const body = req.method === "POST" ? await readBody(req) : undefined;
+  const server = buildMcpServer();
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  res.on("close", () => {
+    void transport.close();
+    void server.close();
+  });
+  await server.connect(transport);
+  await transport.handleRequest(req, res, body);
 }
 
 function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {

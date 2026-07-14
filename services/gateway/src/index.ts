@@ -1,114 +1,18 @@
 /**
- * Hoodwire MCP gateway — stdio transport.
- * One connection, every financial capability. Each call: precheck budget →
- * auction across vendors → execute winner → charge → update reputation.
- *
- * Run: npm run dev:gateway   (or wire into Claude Desktop/Code, see README)
+ * Hoodwire MCP gateway — stdio transport (for local MCP clients like Claude Desktop/Code).
+ * Also starts the HTTP API/SSE sidecar, which exposes the same tools over MCP-over-HTTP.
  */
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
-import type { Capability } from "@hoodwire/sdk";
 import { ADAPTERS } from "./adapters/index.js";
-import { getAccount, setBudget } from "./billing.js";
-import { snapshot } from "./reputation.js";
-import { runCapability } from "./pipeline.js";
+import { buildMcpServer } from "./mcp-server.js";
 import { startHttpServer } from "./server.js";
 
-// single-user dev mode; hosted mode derives this from the bearer token
-const USER = "dev-user";
-
-const server = new McpServer({ name: "hoodwire", version: "0.1.0" });
-
-async function handle(capability: Capability, params: Record<string, unknown>) {
-  const res = await runCapability(capability, params, USER);
-  if (!res.ok) {
-    return {
-      content: [{ type: "text" as const, text: `blocked (${res.reason}): ${res.detail}` }],
-      isError: true,
-    };
-  }
-  return { content: [{ type: "text" as const, text: JSON.stringify(res.summary, null, 2) }] };
-}
-
-server.tool(
-  "get_stock_price",
-  "Real-time Stock Token price in USDG (routed, typically Chainlink feeds).",
-  { symbol: z.string().describe("Stock Token symbol, e.g. tNVDA, tAAPL, tGOOGL") },
-  async ({ symbol }) => handle("get_stock_price", { symbol }),
-);
-
-server.tool(
-  "execute_swap",
-  "Swap on the best AMM (Uniswap v3 vs Pleiades), auctioned by price × latency × reputation.",
-  {
-    tokenIn: z.string().default("USDG"),
-    tokenOut: z.string().describe("e.g. tNVDA"),
-    amountUsdg: z.number().positive().describe("notional in USDG"),
-  },
-  async (p) => handle("execute_swap", p),
-);
-
-server.tool(
-  "get_lending_rate",
-  "Current supply/borrow APY for a lending market (routed, typically Morpho).",
-  { asset: z.string().default("USDG"), collateral: z.string().default("tNVDA") },
-  async (p) => handle("get_lending_rate", p),
-);
-
-server.tool(
-  "supply_collateral",
-  "Supply USDG to the best lending market.",
-  { amountUsdg: z.number().positive(), collateral: z.string().default("tNVDA") },
-  async (p) => handle("supply_collateral", p),
-);
-
-server.tool(
-  "portfolio_snapshot",
-  "Snapshot of the connected wallet's positions.",
-  { wallet: z.string().optional() },
-  async (p) => handle("portfolio_snapshot", p),
-);
-
-server.tool(
-  "bridge_quote",
-  "Quote bridging USDG between Robinhood Chain and Ethereum L1.",
-  { direction: z.enum(["to_l1", "to_l2"]).default("to_l1"), amountUsdg: z.number().positive() },
-  async (p) => handle("bridge_quote", p),
-);
-
-server.tool(
-  "hoodwire_account",
-  "Inspect balance, today's spend, budget controls, and vendor reputations.",
-  {},
-  async () => {
-    const a = getAccount(USER);
-    return {
-      content: [{
-        type: "text" as const,
-        text: JSON.stringify({ account: a, vendors: snapshot() }, null, 2),
-      }],
-    };
-  },
-);
-
-server.tool(
-  "hoodwire_set_budget",
-  "Update budget controls (daily limit / approval threshold / low-balance alert). 0 disables a control.",
-  {
-    dailyLimitUsdg: z.number().min(0).optional(),
-    approvalThresholdUsdg: z.number().min(0).optional(),
-    lowBalanceAlertUsdg: z.number().min(0).optional(),
-  },
-  async (patch) => ({
-    content: [{ type: "text" as const, text: JSON.stringify(setBudget(USER, patch), null, 2) }],
-  }),
-);
-
+const server = buildMcpServer();
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error("hoodwire gateway ready (stdio) — capabilities: " +
-  ADAPTERS.flatMap((a) => a.capabilities).filter((v, i, s) => s.indexOf(v) === i).join(", "));
 
-// HTTP/SSE sidecar for the dashboard and metrics pages (same in-process router/billing)
+const caps = [...new Set(ADAPTERS.flatMap((a) => a.capabilities))].join(", ");
+console.error(`hoodwire gateway ready (stdio) — capabilities: ${caps}`);
+
+// HTTP API + SSE + MCP-over-HTTP for the dashboard, metrics, and remote agents.
 startHttpServer(Number(process.env.GATEWAY_PORT ?? 8787));
