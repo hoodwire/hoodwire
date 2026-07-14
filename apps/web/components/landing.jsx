@@ -624,7 +624,7 @@ function CodeCard() {
           {copied ? "copied ✓" : "copy"}
         </button>
       </div>
-      <pre className="p-5 text-[13px] leading-6 overflow-x-auto" style={{ color: C.ink }}>
+      <pre className="p-4 sm:p-5 text-[10.5px] sm:text-[13px] leading-5 sm:leading-6 overflow-x-auto whitespace-pre-wrap break-words sm:whitespace-pre" style={{ color: C.ink }}>
         <div style={c}>{"// 01 — add Hoodwire to your agent's MCP config"}</div>
         {"{\n"}
         {"  "}<span style={k}>"mcpServers"</span>{": {\n"}
