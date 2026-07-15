@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { LogoMark } from "./logo";
 
 /*
  * Hoodwire landing page.
@@ -851,8 +852,8 @@ export default function HoodwireLanding() {
         >
           <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: 1150 }}>
             <a href="#" className="flex items-center gap-2 font-semibold tracking-tight text-lg" style={{ color: C.ink }}>
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-md text-[13px] font-bold" style={{ background: C.lime, color: C.bg, boxShadow: "0 0 18px rgba(198,245,62,0.4)" }}>
-                ⌁
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-md" style={{ background: C.lime, boxShadow: "0 0 18px rgba(198,245,62,0.4)" }}>
+                <LogoMark color={C.bg} size={13} />
               </span>
               hoodwire
             </a>
@@ -1108,7 +1109,7 @@ export default function HoodwireLanding() {
           <div className="mx-auto px-6 py-12 md:py-16 grid md:grid-cols-4 gap-10" style={{ maxWidth: 1150 }}>
             <div>
               <div className="flex items-center gap-2 font-semibold text-lg mb-4">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md text-[13px] font-bold" style={{ background: C.lime, color: C.bg }}>⌁</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md" style={{ background: C.lime }}><LogoMark color={C.bg} size={13} /></span>
                 hoodwire
               </div>
               <p className="text-sm leading-relaxed" style={{ color: C.mute }}>

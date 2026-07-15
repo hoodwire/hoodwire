@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { LogoMark } from "./logo";
 
 export const C = {
   bg: "#0B0E0C",
@@ -32,7 +33,7 @@ export function SiteNav() {
     >
       <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: 1150 }}>
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-lg" style={{ color: C.ink }}>
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-md text-[13px] font-bold" style={{ background: C.lime, color: C.bg }}>⌁</span>
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-md" style={{ background: C.lime }}><LogoMark color={C.bg} size={13} /></span>
           hoodwire
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm">
