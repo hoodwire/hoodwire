@@ -26,11 +26,11 @@ export default function OpengraphImage() {
           background: "#0B0E0C",
         }}
       >
-        <div style={layer("radial-gradient(circle at 22% 32%, rgba(33,80,38,0.9), transparent 55%)")} />
-        <div style={layer("radial-gradient(circle at 72% 68%, rgba(25,62,32,0.75), transparent 52%)")} />
-        <div style={layer("radial-gradient(circle at 52% 52%, rgba(46,104,45,0.45), transparent 42%)")} />
-        <div style={layer("radial-gradient(120% 70% at 50% 0%, rgba(198,245,62,0.16), transparent 62%)")} />
-        <div style={layer("radial-gradient(85% 80% at 50% 58%, transparent 38%, rgba(11,14,12,0.9))")} />
+        <div style={layer("radial-gradient(circle at 22% 30%, rgba(52,130,58,0.95) 0%, rgba(11,14,12,0) 62%)")} />
+        <div style={layer("radial-gradient(circle at 76% 70%, rgba(38,100,48,0.9) 0%, rgba(11,14,12,0) 58%)")} />
+        <div style={layer("radial-gradient(circle at 50% 48%, rgba(84,168,72,0.5) 0%, rgba(11,14,12,0) 46%)")} />
+        <div style={layer("radial-gradient(92% 88% at 50% 55%, rgba(11,14,12,0) 40%, rgba(11,14,12,0.82) 100%)")} />
+        <div style={layer("radial-gradient(115% 65% at 50% 0%, rgba(198,245,62,0.24) 0%, rgba(11,14,12,0) 62%)")} />
 
         <div
           style={{
