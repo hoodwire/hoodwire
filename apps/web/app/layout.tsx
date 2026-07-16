@@ -1,10 +1,28 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const title = "Hoodwire — the financial routing layer for AI agents";
+const description =
+  "One MCP connection. Every financial service on Robinhood Chain. Routed, paid in USDG, settled in under a second.";
+
 export const metadata: Metadata = {
-  title: "Hoodwire — the financial routing layer for AI agents",
-  description:
-    "One MCP connection. Every financial service on Robinhood Chain. Routed, paid in USDG, settled in under a second.",
+  metadataBase: new URL("https://www.hoodwire.xyz"),
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    url: "https://www.hoodwire.xyz",
+    siteName: "Hoodwire",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    site: "@hoodwirexyz",
+    creator: "@hoodwirexyz",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

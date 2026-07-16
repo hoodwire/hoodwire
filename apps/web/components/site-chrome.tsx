@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { LogoMark } from "./logo";
+import { ShaderBackground, Grain } from "./shader-background";
 
 export const C = {
   bg: "#0B0E0C",
@@ -76,21 +77,25 @@ export function SiteNav() {
 
 export function PageShell({ title, eyebrow, children }: { title: React.ReactNode; eyebrow: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen" style={{ background: C.bg, color: C.ink }}>
-      <SiteNav />
-      <main className="mx-auto px-6 pt-12 pb-20 md:pt-16 md:pb-28" style={{ maxWidth: 1150 }}>
-        <div className="text-xs tracking-[0.24em] uppercase mb-4" style={{ color: C.lime }}>{eyebrow}</div>
-        <h1 className="font-semibold tracking-tight mb-8 md:mb-12" style={{ fontSize: "clamp(1.55rem, 4.5vw, 2.9rem)", lineHeight: 1.12 }}>
-          {title}
-        </h1>
-        {children}
-      </main>
-      <footer className="px-6 py-8 text-xs" style={{ borderTop: `1px solid ${C.line}`, color: C.mute }}>
-        <div className="mx-auto flex flex-wrap justify-between gap-3" style={{ maxWidth: 1150 }}>
-          <span>© 2026 Hoodwire · The financial routing layer for AI agents</span>
-          <span>Built on <span style={{ color: C.lime }}>Robinhood Chain</span> · 100ms blocks</span>
-        </div>
-      </footer>
+    <div className="min-h-screen relative" style={{ background: C.bg, color: C.ink }}>
+      <ShaderBackground />
+      <Grain />
+      <div className="relative" style={{ zIndex: 10 }}>
+        <SiteNav />
+        <main className="mx-auto px-6 pt-12 pb-20 md:pt-16 md:pb-28" style={{ maxWidth: 1150 }}>
+          <div className="text-xs tracking-[0.24em] uppercase mb-4" style={{ color: C.lime }}>{eyebrow}</div>
+          <h1 className="font-semibold tracking-tight mb-8 md:mb-12" style={{ fontSize: "clamp(1.55rem, 4.5vw, 2.9rem)", lineHeight: 1.12 }}>
+            {title}
+          </h1>
+          {children}
+        </main>
+        <footer className="px-6 py-8 text-xs" style={{ borderTop: `1px solid ${C.line}`, color: C.mute }}>
+          <div className="mx-auto flex flex-wrap justify-between gap-3" style={{ maxWidth: 1150 }}>
+            <span>© 2026 Hoodwire · The financial routing layer for AI agents</span>
+            <span>Built on <span style={{ color: C.lime }}>Robinhood Chain</span> · 100ms blocks</span>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
