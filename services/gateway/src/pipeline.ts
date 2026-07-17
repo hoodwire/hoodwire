@@ -28,6 +28,14 @@ export async function runCapability(
   const adapter = ADAPTERS.find((a) => a.id === routed.adapterId)!;
   const result = await adapter.execute(capability, params);
 
+  // A vendor that failed still counts against its reputation — that is what steers the
+  // auction away from it — but the caller is not charged for a result they didn't get.
+  if (!result.ok) {
+    recordCall(adapter.id, false, result.actualLatencyMs);
+    const detail = typeof result.data.error === "string" ? result.data.error : "vendor call failed";
+    return { ok: false, reason: "vendor_failed", detail: `${adapter.id}: ${detail}` };
+  }
+
   const settled = await charge(user, routed.winner.priceUsdg, {
     vendor: adapter.id,
     ok: result.ok,
