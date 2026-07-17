@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {MockUSDG} from "../src/mocks/MockUSDG.sol";
+import {SilentFailUSDG} from "../src/mocks/SilentFailUSDG.sol";
 import {Reputation} from "../src/Reputation.sol";
 import {SettlementEscrow} from "../src/SettlementEscrow.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
@@ -81,5 +82,52 @@ contract SettlementEscrowTest is Test {
         vm.prank(operator);
         vm.expectRevert(SettlementEscrow.InsufficientBalance.selector);
         escrow.charge(user, UNISWAP, vendor, 51e6, true, 100);
+    }
+
+    /// A token that returns false instead of reverting must not credit a deposit —
+    /// otherwise anyone could mint escrow balance out of thin air and drain the contract.
+    function test_deposit_revertsWhenTokenFailsSilently() public {
+        (SettlementEscrow e, SilentFailUSDG bad) = _silentFailEscrow();
+        bad.setFail(false, true); // transferFrom returns false
+
+        vm.prank(user);
+        vm.expectRevert(SettlementEscrow.TransferFailed.selector);
+        e.deposit(50e6);
+
+        assertEq(e.balances(user), 0);
+    }
+
+    function test_withdraw_revertsWhenTokenFailsSilently() public {
+        (SettlementEscrow e, SilentFailUSDG bad) = _silentFailEscrow();
+
+        vm.prank(user);
+        e.deposit(50e6); // transfers still work here
+        assertEq(e.balances(user), 50e6);
+
+        bad.setFail(true, false); // now transfer returns false
+        vm.prank(user);
+        vm.expectRevert(SettlementEscrow.TransferFailed.selector);
+        e.withdraw(10e6);
+
+        assertEq(e.balances(user), 50e6); // balance survives the failed payout
+    }
+
+    function test_charge_revertsWhenVendorPayoutFailsSilently() public {
+        (SettlementEscrow e, SilentFailUSDG bad) = _silentFailEscrow();
+        vm.prank(user);
+        e.deposit(50e6);
+
+        bad.setFail(true, false);
+        vm.prank(operator);
+        vm.expectRevert(SettlementEscrow.TransferFailed.selector);
+        e.charge(user, UNISWAP, vendor, 1e6, true, 300);
+
+        assertEq(e.balances(user), 50e6); // nothing is debited if the vendor wasn't paid
+    }
+
+    function _silentFailEscrow() private returns (SettlementEscrow e, SilentFailUSDG bad) {
+        bad = new SilentFailUSDG();
+        e = new SettlementEscrow(IERC20(address(bad)), rep, operator, feeRecipient, 500);
+        bad.mint(user, 100e6);
     }
 }

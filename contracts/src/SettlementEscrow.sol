@@ -43,6 +43,7 @@ contract SettlementEscrow {
     error InsufficientBalance();
     error DailyLimitExceeded();
     error ZeroAddress();
+    error TransferFailed();
 
     modifier onlyOperator() {
         if (msg.sender != operator) revert NotOperator();
@@ -59,10 +60,30 @@ contract SettlementEscrow {
         protocolFeeBps = _feeBps;
     }
 
+    // ---------- token transfers ----------
+
+    /// @dev Treat a token call as successful only if it neither reverted nor returned false.
+    ///      Tokens that return nothing on success (USDT-style) are accepted. Ignoring this
+    ///      would let a non-reverting token credit balances without moving any USDG.
+    function _check(bool ok, bytes memory data) private pure {
+        if (!ok || (data.length != 0 && !abi.decode(data, (bool)))) revert TransferFailed();
+    }
+
+    function _pull(address from, uint256 amount) private {
+        (bool ok, bytes memory data) =
+            address(usdg).call(abi.encodeCall(IERC20.transferFrom, (from, address(this), amount)));
+        _check(ok, data);
+    }
+
+    function _push(address to, uint256 amount) private {
+        (bool ok, bytes memory data) = address(usdg).call(abi.encodeCall(IERC20.transfer, (to, amount)));
+        _check(ok, data);
+    }
+
     // ---------- user ----------
 
     function deposit(uint256 amount) external {
-        usdg.transferFrom(msg.sender, address(this), amount);
+        _pull(msg.sender, amount);
         balances[msg.sender] += amount;
         emit Deposited(msg.sender, amount);
     }
@@ -71,7 +92,7 @@ contract SettlementEscrow {
     function withdraw(uint256 amount) external {
         if (balances[msg.sender] < amount) revert InsufficientBalance();
         balances[msg.sender] -= amount;
-        usdg.transfer(msg.sender, amount);
+        _push(msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
     }
 
@@ -107,8 +128,8 @@ contract SettlementEscrow {
 
         balances[user] -= fee;
         uint256 protocolCut = (fee * protocolFeeBps) / 10000;
-        usdg.transfer(feeRecipient, protocolCut);
-        usdg.transfer(vendorPayout, fee - protocolCut);
+        _push(feeRecipient, protocolCut);
+        _push(vendorPayout, fee - protocolCut);
 
         reputation.recordCall(vendorId, success, latencyMs);
         emit Charged(user, vendorId, vendorPayout, fee, protocolCut, success, latencyMs);
