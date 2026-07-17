@@ -1,7 +1,7 @@
 import type { Capability, Quote } from "@hoodwire/sdk";
 import { formatUnits, type Hex } from "viem";
 import { type VendorAdapter, type ExecutionResult, jitter, sleep } from "./types.js";
-import { publicClient } from "../chain-client.js";
+import { priceClient, pricesAreRemote } from "../chain-client.js";
 
 /** Plausible 24/7 Stock Token marks, used only when no onchain feed is configured. */
 const MARKS: Record<string, number> = {
@@ -51,7 +51,7 @@ const SEQUENCER_GRACE_SEC = 3600;
 
 async function sequencerDown(): Promise<string | null> {
   if (!SEQUENCER_FEED) return null;
-  const round = await publicClient.readContract({
+  const round = await priceClient.readContract({
     address: SEQUENCER_FEED,
     abi: aggregatorAbi,
     functionName: "latestRoundData",
@@ -120,8 +120,8 @@ async function readFeed(symbol: string, feed: Hex): Promise<ExecutionResult> {
     if (down) return fail(down);
 
     const [decimals, round] = await Promise.all([
-      publicClient.readContract({ address: feed, abi: aggregatorAbi, functionName: "decimals" }),
-      publicClient.readContract({ address: feed, abi: aggregatorAbi, functionName: "latestRoundData" }),
+      priceClient.readContract({ address: feed, abi: aggregatorAbi, functionName: "decimals" }),
+      priceClient.readContract({ address: feed, abi: aggregatorAbi, functionName: "latestRoundData" }),
     ]);
 
     const [roundId, answer, , updatedAt] = round;
@@ -143,7 +143,8 @@ async function readFeed(symbol: string, feed: Hex): Promise<ExecutionResult> {
         updatedAt: Number(updatedAt),
         ageSec,
         feed,
-        source: "chainlink-onchain",
+        // Say so when the price is read from a different chain than the one it settles on.
+        source: pricesAreRemote ? "chainlink-onchain (price chain)" : "chainlink-onchain",
       },
       actualLatencyMs: Math.round(performance.now() - started),
     };

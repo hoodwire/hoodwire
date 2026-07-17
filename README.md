@@ -168,13 +168,18 @@ checks the deployer balance, deploys, and commits the addresses.
 Vendor adapters are currently **simulated**: routing, billing and settlement are real, but
 the market data each vendor returns is illustrative.
 
-The Chainlink adapter is the exception — set `CHAINLINK_FEEDS` to a `{"tNVDA":"0x…"}` map of
+The Chainlink adapter is the exception — set `CHAINLINK_FEEDS` to a `{"tAAPL":"0x…"}` map of
 official aggregator proxies ([Chainlink maintains the
 list](https://docs.chain.link/data-feeds/price-feeds/addresses?network=robinhood)) and it
 reads prices onchain, validating the answer, round freshness (`CHAINLINK_MAX_STALENESS_SEC`,
 default 3600) and — with `CHAINLINK_SEQUENCER_FEED` set — L2 sequencer uptime. A configured
 feed never falls back to a simulated mark: callers get a real price or an error. Failed
 vendor calls count against reputation and are not charged.
+
+Chainlink publishes Robinhood Chain feeds on **mainnet only**, so a testnet deployment reads
+them from mainnet via `CHAINLINK_RPC_URL` (+ `CHAINLINK_CHAIN_ID`) while settlement stays on
+testnet — price reads cost no gas and touch no funds. Responses say `chainlink-onchain
+(price chain)` when the price came from a chain other than the one the call settled on.
 
 Nothing here is chain-specific — the contracts and gateway run on any EVM chain.
 
