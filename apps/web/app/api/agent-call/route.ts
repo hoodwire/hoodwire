@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Server-side proxy to the gateway's /call endpoint.
  * Keeps GATEWAY_API_KEY on the server so the browser never sees it. The gateway
  * settles the call against the caller's own escrow (see billing.payerOf).
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const gateway = process.env.NEXT_PUBLIC_GATEWAY_URL;
   if (!gateway) {
     return NextResponse.json({ error: "gateway_not_configured" }, { status: 503 });
