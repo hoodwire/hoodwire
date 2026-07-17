@@ -137,7 +137,9 @@ Set `NEXT_PUBLIC_GATEWAY_URL` to your gateway URL to make `/metrics` and the act
 read live data (leave it unset and the site falls back to onchain/demo data).
 
 **Gateway (Railway).** The repo includes `railway.json`; the start command is
-`npm run serve:gateway`. Set:
+`npm run serve:gateway`. The gateway runs TypeScript directly via `tsx`, so it has no
+build step — `railway.json` overrides the build command to keep the web's `next build`
+out of the gateway's deploy. Set:
 
 - `RPC_URL`, `CHAIN_ID`, and the four contract addresses
 - `OPERATOR_PRIVATE_KEY` — testnet operator key (**secret**)
