@@ -23,6 +23,9 @@ export const metadata: Metadata = {
     site: "@hoodwirexyz",
     creator: "@hoodwirexyz",
   },
+  other: {
+    "virtual-protocol-site-verification": "d2e6d5a237173cbbcb3dc2f030271f59",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
