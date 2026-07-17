@@ -2,10 +2,12 @@ import type { Capability, Quote } from "@hoodwire/sdk";
 import { formatUnits, type Hex } from "viem";
 import { type VendorAdapter, type ExecutionResult, jitter, sleep } from "./types.js";
 import { priceClient, pricesAreRemote } from "../chain-client.js";
+import { ROBINHOOD_MAINNET_FEEDS } from "../feeds/robinhood-mainnet.js";
 
-/** Plausible 24/7 Stock Token marks, used only when no onchain feed is configured. */
+/** Illustrative marks, used only when no onchain feed is configured. */
 const MARKS: Record<string, number> = {
   tNVDA: 1287.4, tAAPL: 243.1, tGOOGL: 201.8, tMSFT: 512.6, tSPY: 634.2,
+  tTSLA: 421.7, tMETA: 618.3, tAMZN: 231.5, tCOIN: 288.9, tPLTR: 172.4,
 };
 
 const aggregatorAbi = [
@@ -26,17 +28,22 @@ const aggregatorAbi = [
 ] as const;
 
 /**
- * Symbol → Chainlink aggregator proxy, from CHAINLINK_FEEDS (JSON):
- *   CHAINLINK_FEEDS={"tNVDA":"0x...","tAAPL":"0x..."}
- * Addresses are maintained by Chainlink, not Robinhood — read them from
- * https://docs.chain.link/data-feeds/price-feeds/addresses?network=robinhood
+ * Symbol → Chainlink aggregator proxy.
+ *
+ * The committed map holds the official Robinhood Chain **mainnet** proxies, which is where
+ * Chainlink publishes these feeds — so they are only used once CHAINLINK_RPC_URL points the
+ * price client at mainnet. CHAINLINK_FEEDS (JSON, e.g. {"tNVDA":"0x…"}) overrides the map
+ * for any other deployment.
  */
 function feeds(): Record<string, Hex> {
-  try {
-    return process.env.CHAINLINK_FEEDS ? (JSON.parse(process.env.CHAINLINK_FEEDS) as Record<string, Hex>) : {};
-  } catch {
-    return {};
+  if (process.env.CHAINLINK_FEEDS) {
+    try {
+      return JSON.parse(process.env.CHAINLINK_FEEDS) as Record<string, Hex>;
+    } catch {
+      return {};
+    }
   }
+  return pricesAreRemote ? ROBINHOOD_MAINNET_FEEDS : {};
 }
 
 /** Reject a price older than the feed's heartbeat — a stale feed is not a price. */
