@@ -77,7 +77,11 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       return json(res, { error: `unknown capability: ${capStr}`, capabilities: CAPABILITIES }, 404);
     }
     const params = await readBody(req);
-    const result = await runCapability(capStr as Capability, params, "http-user");
+    // `user` (a wallet address) makes the call settle against that address's escrow.
+    const user = typeof params.user === "string" && /^0x[a-fA-F0-9]{40}$/.test(params.user)
+      ? params.user
+      : "http-user";
+    const result = await runCapability(capStr as Capability, params, user);
     if (!result.ok) return json(res, { error: result.reason, detail: result.detail }, 402);
     return json(res, result.summary);
   }

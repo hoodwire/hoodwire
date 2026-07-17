@@ -37,17 +37,19 @@ function clients() {
 }
 
 /**
- * Settle a call through SettlementEscrow.charge(). In this dev wiring the operator
- * account is both the depositing user and the vendor payout; a production gateway would
- * map the MCP session to a real user address and each vendor to its payout address.
+ * Settle a call through SettlementEscrow.charge(): debit `user`'s escrow, pay the vendor,
+ * and report to Reputation. Falls back to the operator's own escrow when no user address
+ * is given. Vendor payout is still the operator until vendors register payout addresses.
  */
 export async function chargeOnchain(
   feeUsdg: number,
   vendor: string,
   success: boolean,
   latencyMs: number,
+  user?: Hex,
 ): Promise<OnchainCharge> {
   const { account, escrow, publicClient, walletClient } = clients();
+  const payer = user ?? account.address;
   const fee = parseUnits(feeUsdg.toFixed(6) as `${number}`, 6);
   const vendorId = stringToHex(vendor, { size: 32 });
   try {
@@ -58,7 +60,7 @@ export async function chargeOnchain(
       address: escrow,
       abi: escrowAbi,
       functionName: "charge",
-      args: [account.address, vendorId, account.address, fee, success, Math.min(Math.round(latencyMs), 4_294_967_295)],
+      args: [payer, vendorId, account.address, fee, success, Math.min(Math.round(latencyMs), 4_294_967_295)],
       type: "legacy",
       gasPrice,
     });

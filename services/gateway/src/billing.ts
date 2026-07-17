@@ -48,6 +48,11 @@ export function precheck(user: string, feeUsdg: number): Precheck {
 export type ChargeReason = Extract<OnchainCharge, { ok: false }>["reason"];
 export type ChargeResult = { ok: true } | { ok: false; reason: ChargeReason; detail: string };
 
+/** A ledger key that is also a wallet address is charged onchain directly. */
+function payerOf(user: string): `0x${string}` | undefined {
+  return /^0x[a-fA-F0-9]{40}$/.test(user) ? (user as `0x${string}`) : undefined;
+}
+
 /**
  * Charge a settled call. Updates the in-memory ledger optimistically, then—if onchain
  * settlement is enabled—commits through SettlementEscrow.charge(). A revert rolls back
@@ -65,7 +70,7 @@ export async function charge(
   a.spentTodayUsdg = Number((a.spentTodayUsdg + feeUsdg).toFixed(6));
 
   if (onchainEnabled && ctx) {
-    const settled = await chargeOnchain(feeUsdg, ctx.vendor, ctx.ok, ctx.latencyMs);
+    const settled = await chargeOnchain(feeUsdg, ctx.vendor, ctx.ok, ctx.latencyMs, payerOf(user));
     if (!settled.ok) {
       a.balanceUsdg = prevBalance; // roll back the optimistic cache
       a.spentTodayUsdg = prevSpent;

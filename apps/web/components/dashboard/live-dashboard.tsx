@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useReadContracts, useWriteContract, usePublicClient } from "wagmi";
-import { formatUnits, parseUnits, stringToHex } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { Card, C, mono } from "@/components/site-chrome";
 import { type Deployment, USDG_DECIMALS } from "@/lib/chain";
 import { escrowAbi, usdgAbi } from "@/lib/abis";
@@ -33,7 +33,6 @@ export function LiveDashboard({ deployment, address }: { deployment: Deployment;
       { address: deployment.settlementEscrow, abi: escrowAbi, functionName: "balances", args: [address] },
       { address: deployment.usdg, abi: usdgAbi, functionName: "balanceOf", args: [address] },
       { address: deployment.settlementEscrow, abi: escrowAbi, functionName: "configs", args: [address] },
-      { address: deployment.settlementEscrow, abi: escrowAbi, functionName: "operator", args: [] },
     ],
     query: { refetchInterval: 5000 },
   });
@@ -43,31 +42,21 @@ export function LiveDashboard({ deployment, address }: { deployment: Deployment;
   const cfg = data?.[2]?.result as readonly [bigint, bigint, bigint] | undefined;
   const dailyLimit = cfg?.[0] ?? 0n;
   const spentToday = cfg?.[1] ?? 0n;
-  const operator = data?.[3]?.result as `0x${string}` | undefined;
-  const isOperator = !!operator && operator.toLowerCase() === address.toLowerCase();
-
   const reload = () => void refetch();
 
   return (
     <div className="grid lg:grid-cols-3 gap-6">
-      <WalletCard deployment={deployment} address={address} isOperator={isOperator} escrowBal={escrowBal} walletBal={walletBal} spentToday={spentToday} dailyLimit={dailyLimit} reload={reload} />
+      <WalletCard deployment={deployment} address={address} escrowBal={escrowBal} walletBal={walletBal} spentToday={spentToday} dailyLimit={dailyLimit} reload={reload} />
       <LimitCard deployment={deployment} dailyLimit={dailyLimit} reload={reload} />
       <ActivityCard deployment={deployment} />
     </div>
   );
 }
 
-const TEST_CALLS = [
-  { cap: "get_stock_price", vendor: "chainlink-feeds", fee: "0.002", ms: 96 },
-  { cap: "execute_swap", vendor: "uniswap-v3", fee: "0.14", ms: 612 },
-  { cap: "get_lending_rate", vendor: "morpho-blue", fee: "0.02", ms: 236 },
-  { cap: "portfolio_snapshot", vendor: "hoodwire-core", fee: "0.005", ms: 214 },
-] as const;
-
 function WalletCard({
-  deployment, address, isOperator, escrowBal, walletBal, spentToday, dailyLimit, reload,
+  deployment, address, escrowBal, walletBal, spentToday, dailyLimit, reload,
 }: {
-  deployment: Deployment; address: `0x${string}`; isOperator: boolean;
+  deployment: Deployment; address: `0x${string}`;
   escrowBal: bigint; walletBal: bigint; spentToday: bigint; dailyLimit: bigint; reload: () => void;
 }) {
   const [amount, setAmount] = useState("25");
@@ -127,23 +116,25 @@ function WalletCard({
     }
   }
 
-  // Operator-only: settle one simulated agent call through escrow.charge() onchain,
-  // so the deposited balance visibly gets spent (this is what the gateway does in production).
+  // Ask the hosted gateway to run a real capability call and settle it against this
+  // wallet's escrow. No signature needed — that is the point: the agent spends from the
+  // balance you funded, capped by the onchain daily limit.
   async function runAgentCall() {
-    if (!publicClient || busy) return;
+    if (busy) return;
     setBusy(true);
     try {
-      const pick = TEST_CALLS[Math.floor(Math.random() * TEST_CALLS.length)];
-      setStatus(`Agent call · ${pick.cap} → ${pick.vendor} — confirm in wallet…`);
-      const hash = await writeContractAsync({
-        address: deployment.settlementEscrow,
-        abi: escrowAbi,
-        functionName: "charge",
-        args: [address, stringToHex(pick.vendor, { size: 32 }), address, parseUnits(pick.fee as `${number}`, USDG_DECIMALS), true, pick.ms],
+      setStatus("Agent calling — routing across vendors…");
+      const res = await fetch("/api/agent-call", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ user: address, capability: "get_stock_price" }),
       });
-      setStatus("Settling onchain…");
-      await publicClient.waitForTransactionReceipt({ hash });
-      setStatus(`Charged ${pick.fee} USDG for ${pick.cap} ✓`);
+      const data = (await res.json()) as { routedTo?: string; feeUsdg?: number; error?: string; detail?: string };
+      if (!res.ok) {
+        setStatus(`Blocked: ${data.detail ?? data.error ?? res.statusText}`);
+        return;
+      }
+      setStatus(`Charged ${data.feeUsdg} USDG · routed to ${data.routedTo} ✓`);
       reload();
     } catch (e) {
       setStatus("Failed: " + errMsg(e));
@@ -213,16 +204,19 @@ function WalletCard({
         + Get 1,000 test USDG (free)
       </button>
 
-      {isOperator && (
-        <button
-          onClick={runAgentCall}
-          disabled={busy}
-          className="mt-4 w-full px-3 py-2.5 rounded-lg text-sm font-semibold"
-          style={{ border: `1px solid ${C.limeBorder}`, background: C.limeDim, color: C.lime, opacity: busy ? 0.6 : 1 }}
-        >
-          ▸ Run a test agent call (spends from escrow)
-        </button>
-      )}
+      <button
+        onClick={runAgentCall}
+        disabled={busy || escrowBal === 0n}
+        className="mt-4 w-full px-3 py-2.5 rounded-lg text-sm font-semibold"
+        style={{
+          border: `1px solid ${C.limeBorder}`,
+          background: C.limeDim,
+          color: C.lime,
+          opacity: busy || escrowBal === 0n ? 0.5 : 1,
+        }}
+      >
+        {escrowBal === 0n ? "Top up first to run an agent call" : "▸ Run a test agent call (spends from escrow)"}
+      </button>
 
       <div className="mt-6">
         <div className="flex justify-between text-xs mb-1">
