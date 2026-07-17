@@ -15,8 +15,8 @@ const SECTIONS = [
 const MCP_SNIPPET = `{
   "mcpServers": {
     "hoodwire": {
-      "url": "https://mcp.hoodwire.xyz",
-      "headers": { "Authorization": "Bearer hw-sk-…" }
+      "url": "https://hoodwiregateway-production.up.railway.app/mcp",
+      "headers": { "Authorization": "Bearer <your key>" }
     }
   }
 }`;

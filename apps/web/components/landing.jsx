@@ -343,8 +343,8 @@ function Marquee() {
 const MCP_JSON = `{
   "mcpServers": {
     "hoodwire": {
-      "url": "https://mcp.hoodwire.xyz",
-      "headers": { "Authorization": "Bearer hw-sk-…" }
+      "url": "https://hoodwiregateway-production.up.railway.app/mcp",
+      "headers": { "Authorization": "Bearer <your key>" }
     }
   }
 }`;
@@ -397,8 +397,8 @@ function CodeCard() {
         {"{\n"}
         {"  "}<span style={k}>"mcpServers"</span>{": {\n"}
         {"    "}<span style={k}>"hoodwire"</span>{": {\n"}
-        {"      "}<span style={k}>"url"</span>{": "}<span style={s}>"https://mcp.hoodwire.xyz"</span>{",\n"}
-        {"      "}<span style={k}>"headers"</span>{": { "}<span style={k}>"Authorization"</span>{": "}<span style={s}>"Bearer hw-sk-…"</span>{" }\n"}
+        {"      "}<span style={k}>"url"</span>{": "}<span style={s}>"https://hoodwiregateway-production.up.railway.app/mcp"</span>{",\n"}
+        {"      "}<span style={k}>"headers"</span>{": { "}<span style={k}>"Authorization"</span>{": "}<span style={s}>"Bearer &lt;your key&gt;"</span>{" }\n"}
         {"    }\n  }\n}"}
         {"\n\n"}
         <div style={c}>{"// 02 — fund once. USDG on Robinhood Chain. No bank, no per-vendor API keys."}</div>
