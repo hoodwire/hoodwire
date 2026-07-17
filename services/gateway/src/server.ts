@@ -7,6 +7,7 @@ import { runCapability } from "./pipeline.js";
 import { buildMcpServer } from "./mcp-server.js";
 import { ADAPTERS } from "./adapters/index.js";
 import { addressForKey, issueKey, keysEnabled } from "./keys.js";
+import { pricesAreRemote } from "./chain-client.js";
 
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -84,7 +85,7 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   }
   const path = (req.url ?? "/").split("?")[0];
 
-  if (path === "/health") return json(res, { ok: true, service: "hoodwire-gateway", capabilities: CAPABILITIES });
+  if (path === "/health") return json(res, { ok: true, service: "hoodwire-gateway", capabilities: CAPABILITIES, pricesRemote: pricesAreRemote });
   if (path === "/capabilities") return json(res, { capabilities: CAPABILITIES });
   if (path === "/metrics/rolling") return json(res, rollingMetrics());
   if (path === "/events") return handleSse(req, res);
