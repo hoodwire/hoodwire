@@ -98,7 +98,7 @@ forge test -vv
 **Hosted (MCP over HTTP)** — point any MCP client at the gateway:
 
 ```
-https://hoodwiregateway-production.up.railway.app/mcp
+https://mcp.hoodwire.xyz/mcp
 ```
 
 Authenticate with `Authorization: Bearer <GATEWAY_API_KEY>`, or `?key=<GATEWAY_API_KEY>`

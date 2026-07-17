@@ -343,7 +343,7 @@ function Marquee() {
 const MCP_JSON = `{
   "mcpServers": {
     "hoodwire": {
-      "url": "https://hoodwiregateway-production.up.railway.app/mcp",
+      "url": "https://mcp.hoodwire.xyz/mcp",
       "headers": { "Authorization": "Bearer <your key>" }
     }
   }
@@ -397,7 +397,7 @@ function CodeCard() {
         {"{\n"}
         {"  "}<span style={k}>"mcpServers"</span>{": {\n"}
         {"    "}<span style={k}>"hoodwire"</span>{": {\n"}
-        {"      "}<span style={k}>"url"</span>{": "}<span style={s}>"https://hoodwiregateway-production.up.railway.app/mcp"</span>{",\n"}
+        {"      "}<span style={k}>"url"</span>{": "}<span style={s}>"https://mcp.hoodwire.xyz/mcp"</span>{",\n"}
         {"      "}<span style={k}>"headers"</span>{": { "}<span style={k}>"Authorization"</span>{": "}<span style={s}>"Bearer &lt;your key&gt;"</span>{" }\n"}
         {"    }\n  }\n}"}
         {"\n\n"}
