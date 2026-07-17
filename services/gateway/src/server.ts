@@ -6,6 +6,7 @@ import { rollingMetrics } from "./metrics.js";
 import { runCapability } from "./pipeline.js";
 import { buildMcpServer } from "./mcp-server.js";
 import { ADAPTERS } from "./adapters/index.js";
+import { addressForKey, issueKey, keysEnabled } from "./keys.js";
 
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -18,16 +19,39 @@ const API_KEY = process.env.GATEWAY_API_KEY ?? "";
 
 const CAPABILITIES: string[] = [...new Set(ADAPTERS.flatMap((a) => a.capabilities))];
 
-// Auth via `Authorization: Bearer <key>` OR a `?key=<key>` query param
-// (the latter lets MCP clients that only take a URL, like Claude's connector UI, authenticate).
-function authorized(req: IncomingMessage): boolean {
-  if (!API_KEY) return true;
-  if (req.headers["authorization"] === `Bearer ${API_KEY}`) return true;
+/**
+ * Who is calling, and therefore whose escrow a call settles against.
+ *
+ * An agent key (`hw_<address>_<hmac>`) spends from that wallet's escrow. The master
+ * GATEWAY_API_KEY is the operator's own; it falls back to the operator's escrow. The payer
+ * is always derived from the credential — never from the request body — so a caller can
+ * only ever spend what they hold the key for.
+ */
+type Principal = { kind: "operator" } | { kind: "wallet"; address: `0x${string}` };
+
+/** Credential from `Authorization: Bearer <key>` or `?key=<key>` (for URL-only MCP clients). */
+function credential(req: IncomingMessage): string | null {
+  const header = req.headers["authorization"];
+  if (typeof header === "string" && header.startsWith("Bearer ")) return header.slice(7);
   try {
-    return new URL(req.url ?? "/", "http://gateway").searchParams.get("key") === API_KEY;
+    return new URL(req.url ?? "/", "http://gateway").searchParams.get("key");
   } catch {
-    return false;
+    return null;
   }
+}
+
+function principal(req: IncomingMessage): Principal | null {
+  const cred = credential(req);
+  if (!cred) return API_KEY ? null : { kind: "operator" };
+  if (API_KEY && cred === API_KEY) return { kind: "operator" };
+  const address = addressForKey(cred);
+  if (address) return { kind: "wallet", address };
+  return API_KEY ? null : { kind: "operator" };
+}
+
+/** The billing ledger key: a wallet address bills that wallet, "operator" bills the operator. */
+function payerOf(p: Principal): string {
+  return p.kind === "wallet" ? p.address : "operator";
 }
 
 /**
@@ -37,7 +61,8 @@ function authorized(req: IncomingMessage): boolean {
  *   GET  /capabilities      capability list
  *   GET  /events            SSE, one message per settled call
  *   GET  /metrics/rolling   rollup of recent calls
- *   POST /call/:capability  run a capability (auth required when GATEWAY_API_KEY set)
+ *   POST /keys              issue an agent key to a wallet that signs for it
+ *   POST /call/:capability  run a capability, settled against the caller's escrow
  */
 export function startHttpServer(port: number): void {
   const server = createServer((req, res) => {
@@ -64,24 +89,35 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
   if (path === "/metrics/rolling") return json(res, rollingMetrics());
   if (path === "/events") return handleSse(req, res);
 
+  // Issue an agent key to whoever proves they control the wallet by signing.
+  if (req.method === "POST" && path === "/keys") {
+    if (!keysEnabled) return json(res, { error: "key_issuance_disabled" }, 503);
+    const body = await readBody(req);
+    const issued = await issueKey(
+      String(body.address ?? ""),
+      String(body.signature ?? ""),
+      Number(body.issuedAt),
+    );
+    if (!issued.ok) return json(res, { error: "invalid_signature", detail: issued.detail }, 400);
+    return json(res, { key: issued.key, address: issued.address });
+  }
+
   // MCP-over-HTTP (Streamable HTTP) — connect Claude Desktop/Code or any MCP client here.
   if (path === "/mcp") {
-    if (!authorized(req)) return json(res, { error: "unauthorized" }, 401);
-    return handleMcp(req, res);
+    const who = principal(req);
+    if (!who) return json(res, { error: "unauthorized" }, 401);
+    return handleMcp(req, res, payerOf(who));
   }
 
   if (req.method === "POST" && path.startsWith("/call/")) {
-    if (!authorized(req)) return json(res, { error: "unauthorized" }, 401);
+    const who = principal(req);
+    if (!who) return json(res, { error: "unauthorized" }, 401);
     const capStr = path.slice("/call/".length);
     if (!CAPABILITIES.includes(capStr)) {
       return json(res, { error: `unknown capability: ${capStr}`, capabilities: CAPABILITIES }, 404);
     }
     const params = await readBody(req);
-    // `user` (a wallet address) makes the call settle against that address's escrow.
-    const user = typeof params.user === "string" && /^0x[a-fA-F0-9]{40}$/.test(params.user)
-      ? params.user
-      : "http-user";
-    const result = await runCapability(capStr as Capability, params, user);
+    const result = await runCapability(capStr as Capability, params, payerOf(who));
     if (!result.ok) return json(res, { error: result.reason, detail: result.detail }, 402);
     return json(res, result.summary);
   }
@@ -95,10 +131,10 @@ function json(res: ServerResponse, body: unknown, status = 200): void {
   res.end(JSON.stringify(body));
 }
 
-// Stateless MCP-over-HTTP: a fresh server + transport per request.
-async function handleMcp(req: IncomingMessage, res: ServerResponse): Promise<void> {
+// Stateless MCP-over-HTTP: a fresh server + transport per request, bound to the caller's payer.
+async function handleMcp(req: IncomingMessage, res: ServerResponse, payer: string): Promise<void> {
   const body = req.method === "POST" ? await readBody(req) : undefined;
-  const server = buildMcpServer();
+  const server = buildMcpServer(payer);
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   res.on("close", () => {
     void transport.close();

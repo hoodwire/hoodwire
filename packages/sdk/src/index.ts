@@ -94,3 +94,19 @@ export const DEFAULT_BUDGET: BudgetConfig = {
   approvalThresholdUsdg: 0.5,
   lowBalanceAlertUsdg: 5,
 };
+
+/**
+ * The exact message a wallet signs to be issued an agent key. Shared so the dashboard
+ * signs byte-for-byte what the gateway verifies — any drift here breaks issuance.
+ */
+export function agentKeyMessage(address: string, issuedAt: number): string {
+  return [
+    "Hoodwire — create an agent key",
+    "",
+    "This key lets an agent spend from this wallet's escrow,",
+    "capped by your onchain daily limit. It costs no gas.",
+    "",
+    `address: ${address.toLowerCase()}`,
+    `issued: ${new Date(issuedAt).toISOString()}`,
+  ].join("\n");
+}

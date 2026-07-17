@@ -5,20 +5,21 @@ import { getAccount, setBudget } from "./billing.js";
 import { snapshot } from "./reputation.js";
 import { runCapability } from "./pipeline.js";
 
-// Single-user dev mode; a hosted multi-tenant gateway would derive this from the bearer token.
-const USER = "dev-user";
-
-async function handle(capability: Capability, params: Record<string, unknown>) {
-  const res = await runCapability(capability, params, USER);
-  if (!res.ok) {
-    return { content: [{ type: "text" as const, text: `blocked (${res.reason}): ${res.detail}` }], isError: true };
-  }
-  return { content: [{ type: "text" as const, text: JSON.stringify(res.summary, null, 2) }] };
-}
-
-/** Build a fresh MCP server with every Hoodwire tool — used by both the stdio and HTTP transports. */
-export function buildMcpServer(): McpServer {
+/**
+ * Build a fresh MCP server with every Hoodwire tool — used by both the stdio and HTTP
+ * transports. `user` is the billing identity: over HTTP the caller's agent key resolves to
+ * the wallet whose escrow the calls settle against; stdio is single-user dev mode.
+ */
+export function buildMcpServer(user = "dev-user"): McpServer {
   const server = new McpServer({ name: "hoodwire", version: "0.1.0" });
+
+  const handle = async (capability: Capability, params: Record<string, unknown>) => {
+    const res = await runCapability(capability, params, user);
+    if (!res.ok) {
+      return { content: [{ type: "text" as const, text: `blocked (${res.reason}): ${res.detail}` }], isError: true };
+    }
+    return { content: [{ type: "text" as const, text: JSON.stringify(res.summary, null, 2) }] };
+  };
 
   server.tool(
     "get_stock_price",
@@ -71,7 +72,7 @@ export function buildMcpServer(): McpServer {
     "Inspect balance, today's spend, budget controls, and vendor reputations.",
     {},
     async () => ({
-      content: [{ type: "text" as const, text: JSON.stringify({ account: getAccount(USER), vendors: snapshot() }, null, 2) }],
+      content: [{ type: "text" as const, text: JSON.stringify({ account: getAccount(user), vendors: snapshot() }, null, 2) }],
     }),
   );
 
@@ -84,7 +85,7 @@ export function buildMcpServer(): McpServer {
       lowBalanceAlertUsdg: z.number().min(0).optional(),
     },
     async (patch) => ({
-      content: [{ type: "text" as const, text: JSON.stringify(setBudget(USER, patch), null, 2) }],
+      content: [{ type: "text" as const, text: JSON.stringify(setBudget(user, patch), null, 2) }],
     }),
   );
 

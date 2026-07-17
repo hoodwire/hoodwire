@@ -8,6 +8,7 @@ import { type Deployment, USDG_DECIMALS } from "@/lib/chain";
 import { escrowAbi, usdgAbi } from "@/lib/abis";
 import { SliderRow } from "./slider-row";
 import { ActivityCard } from "./activity-card";
+import { useAgentKey } from "./use-agent-key";
 
 function fmt(v: bigint): string {
   return Number(formatUnits(v, USDG_DECIMALS)).toFixed(2);
@@ -64,6 +65,7 @@ function WalletCard({
   const [busy, setBusy] = useState(false);
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
+  const agentKey = useAgentKey(address);
 
   const dailyPct = dailyLimit > 0n ? Math.min(100, Number((spentToday * 100n) / dailyLimit)) : 0;
   const halted = dailyLimit > 0n && spentToday >= dailyLimit;
@@ -116,18 +118,18 @@ function WalletCard({
     }
   }
 
-  // Ask the hosted gateway to run a real capability call and settle it against this
-  // wallet's escrow. No signature needed — that is the point: the agent spends from the
-  // balance you funded, capped by the onchain daily limit.
+  // Ask the hosted gateway to run a real capability call. The agent key is what tells it
+  // whose escrow to charge — an agent then spends from the balance you funded without
+  // signing again, capped by the onchain daily limit.
   async function runAgentCall() {
-    if (busy) return;
+    if (busy || !agentKey.key) return;
     setBusy(true);
     try {
       setStatus("Agent calling — routing across vendors…");
       const res = await fetch("/api/agent-call", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ user: address, capability: "get_stock_price" }),
+        headers: { "content-type": "application/json", authorization: `Bearer ${agentKey.key}` },
+        body: JSON.stringify({ capability: "get_stock_price" }),
       });
       const data = (await res.json()) as { routedTo?: string; feeUsdg?: number; error?: string; detail?: string };
       if (!res.ok) {
@@ -204,19 +206,41 @@ function WalletCard({
         + Get 1,000 test USDG (free)
       </button>
 
-      <button
-        onClick={runAgentCall}
-        disabled={busy || escrowBal === 0n}
-        className="mt-4 w-full px-3 py-2.5 rounded-lg text-sm font-semibold"
-        style={{
-          border: `1px solid ${C.limeBorder}`,
-          background: C.limeDim,
-          color: C.lime,
-          opacity: busy || escrowBal === 0n ? 0.5 : 1,
-        }}
-      >
-        {escrowBal === 0n ? "Top up first to run an agent call" : "▸ Run a test agent call (spends from escrow)"}
-      </button>
+      {agentKey.key ? (
+        <button
+          onClick={runAgentCall}
+          disabled={busy || escrowBal === 0n}
+          className="mt-4 w-full px-3 py-2.5 rounded-lg text-sm font-semibold"
+          style={{
+            border: `1px solid ${C.limeBorder}`,
+            background: C.limeDim,
+            color: C.lime,
+            opacity: busy || escrowBal === 0n ? 0.5 : 1,
+          }}
+        >
+          {escrowBal === 0n ? "Top up first to run an agent call" : "▸ Run a test agent call (spends from escrow)"}
+        </button>
+      ) : (
+        <button
+          onClick={agentKey.create}
+          disabled={agentKey.busy}
+          className="mt-4 w-full px-3 py-2.5 rounded-lg text-sm font-semibold"
+          style={{
+            border: `1px solid ${C.limeBorder}`,
+            background: C.limeDim,
+            color: C.lime,
+            opacity: agentKey.busy ? 0.5 : 1,
+          }}
+        >
+          {agentKey.busy ? "Check your wallet…" : "Create an agent key (sign once, no gas)"}
+        </button>
+      )}
+      <p className="text-xs mt-2 min-h-4" style={{ color: agentKey.error ? "#e0704a" : C.mute }}>
+        {agentKey.error ??
+          (agentKey.key
+            ? "Your agent key spends only from this wallet's escrow."
+            : "Proves this wallet is yours, so only you can spend its escrow.")}
+      </p>
 
       <div className="mt-6">
         <div className="flex justify-between text-xs mb-1">

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useWatchContractEvent } from "wagmi";
-import { formatUnits, hexToString } from "viem";
+import { usePublicClient, useWatchContractEvent } from "wagmi";
+import { formatUnits, hexToString, type Log } from "viem";
 import { Card, C, mono } from "@/components/site-chrome";
 import { type Deployment, USDG_DECIMALS } from "@/lib/chain";
 import { escrowAbi } from "@/lib/abis";
@@ -33,11 +33,51 @@ function decodeVendor(vendorId?: `0x${string}`): string {
   }
 }
 
+/** A Charged log → a feed row. */
+function toRow(log: Log): Row {
+  const args = (log as { args?: { vendorId?: `0x${string}`; fee?: bigint; latencyMs?: number } }).args ?? {};
+  return {
+    id: `${log.transactionHash}-${log.logIndex}`,
+    cap: "capability call",
+    vendor: decodeVendor(args.vendorId),
+    fee: args.fee ? Number(formatUnits(args.fee, USDG_DECIMALS)) : 0,
+    ms: args.latencyMs ?? 0,
+  };
+}
+
 export function ActivityCard({ onSpend, deployment }: { onSpend?: (fee: number) => void; deployment?: Deployment }) {
   const onchainMode = !!deployment;
+  const publicClient = usePublicClient();
 
   // Real onchain activity: SettlementEscrow.Charged events.
   const [chain, setChain] = useState<Row[]>([]);
+
+  // watchContractEvent only reports events from the moment it subscribes, so backfill the
+  // recent ones first — otherwise the feed looks empty until the next call lands.
+  useEffect(() => {
+    if (!onchainMode || !publicClient || !deployment) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const latest = await publicClient.getBlockNumber();
+        const span = 50_000n; // keep the range small enough for public RPC limits
+        const logs = await publicClient.getLogs({
+          address: deployment.settlementEscrow,
+          event: escrowAbi.find((e) => e.type === "event" && e.name === "Charged") as never,
+          fromBlock: latest > span ? latest - span : 0n,
+          toBlock: latest,
+        });
+        if (cancelled) return;
+        const rows = logs.map(toRow).reverse().slice(0, 8);
+        // Keep anything the live watcher already picked up ahead of the history.
+        setChain((prev) => [...prev, ...rows.filter((r) => !prev.some((p) => p.id === r.id))].slice(0, 8));
+      } catch {
+        /* RPC may reject the range — the live watcher still fills the feed from here on */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [onchainMode, publicClient, deployment]);
+
   useWatchContractEvent({
     address: deployment?.settlementEscrow,
     abi: escrowAbi,
@@ -46,17 +86,8 @@ export function ActivityCard({ onSpend, deployment }: { onSpend?: (fee: number) 
     poll: true,
     pollingInterval: 4000,
     onLogs(logs) {
-      const rows = logs.map((l): Row => {
-        const args = (l as { args?: { vendorId?: `0x${string}`; fee?: bigint; latencyMs?: number } }).args ?? {};
-        return {
-          id: `${(l as { transactionHash?: string }).transactionHash}-${(l as { logIndex?: number }).logIndex}`,
-          cap: "capability call",
-          vendor: decodeVendor(args.vendorId),
-          fee: args.fee ? Number(formatUnits(args.fee, USDG_DECIMALS)) : 0,
-          ms: args.latencyMs ?? 0,
-        };
-      });
-      setChain((prev) => [...rows.reverse(), ...prev].slice(0, 8));
+      const rows = logs.map(toRow).reverse();
+      setChain((prev) => [...rows.filter((r) => !prev.some((p) => p.id === r.id)), ...prev].slice(0, 8));
     },
   });
 
