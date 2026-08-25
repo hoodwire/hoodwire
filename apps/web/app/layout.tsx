@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   other: {
     "ory-verify": "orynth-a2a5f13578a440799d4c315f462d9465",
-    "virtual-protocol-site-verification": "a6292b2660f5fa02619c52661b779c17",
+    "virtual-protocol-site-verification": "e7a49df0bebc4a243397e25e9f32ed83",
   },
 };
 
